@@ -1,0 +1,29 @@
+//
+// Created by simon on 14/02/25.
+//
+
+#ifndef TREEFEATURESOBS_H
+#define TREEFEATURESOBS_H
+
+#include <vector>
+
+#include <scip/scip.h>
+
+class TreeFeaturesObs{
+    SCIP* scip;
+
+    float gap();
+    float leafFrequency();
+    float openNodes();
+    float ssg();
+    float treeWeight();
+    float completion();
+public:
+    explicit TreeFeaturesObs(long scipl);
+
+    std::vector<float> computeFeatures();
+};
+
+
+
+#endif //TREEFEATURESOBS_H
