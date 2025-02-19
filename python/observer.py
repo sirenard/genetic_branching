@@ -1,3 +1,4 @@
+import ecole
 import pyscipopt
 import my_module
 
@@ -37,4 +38,28 @@ class MyObserver(Observer):
 
         return res
 
+    def __len__(self):
+        return 21
+
+class KhalilObserver(Observer):
+    def __init__(self):
+        super().__init__()
+        self.obs = ecole.observation.Khalil2016()
+
+    def reset(self, instance_path, seed=None):
+        self.obs.reset(instance_path, seed)
+
+    def extract(self, model, done):
+        m: pyscipopt.Model = model.as_pyscipopt()
+        candidates, *_ = m.getLPBranchCands()
+        n_vars = int(m.getNVars())
+        prob_indexes = sorted([var.getCol().getLPPos() for var in candidates])
+
+        obs = self.obs.extract(model, done).features
+
+        res = [None] * n_vars
+
+        for index in prob_indexes:
+            res[index] = [float(v) for v in obs[index]]
+        return res
 

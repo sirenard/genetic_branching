@@ -11,7 +11,8 @@ from train import toolbox
 
 n_instances = 15
 
-individial = pickle.load(open("best_gen2", "rb"))
+individial = pickle.load(open("best_gen_khalil", "rb"))
+print(individial)
 f = toolbox.compile(expr=individial)
 
 if __name__ == '__main__':
