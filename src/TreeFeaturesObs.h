@@ -21,6 +21,14 @@ class TreeFeaturesObs{
 public:
     explicit TreeFeaturesObs(long scipl);
 
+    /**
+     * Extract featurse about the B&B tree:
+     * gap
+     * leaf frequency
+     * tree weight
+     * estimation of the completion
+     * @return Vector of 4 features
+     */
     std::vector<float> computeFeatures();
 };
 

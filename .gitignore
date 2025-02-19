@@ -1,0 +1,6 @@
+.stignore
+.stfolder/*
+.idea/*
+individuals
+cmake-build-debug
+build

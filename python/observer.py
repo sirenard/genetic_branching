@@ -39,7 +39,7 @@ class MyObserver(Observer):
         return res
 
     def __len__(self):
-        return 21
+        return Observation.size
 
 class KhalilObserver(Observer):
     def __init__(self):

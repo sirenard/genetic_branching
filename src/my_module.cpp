@@ -28,7 +28,7 @@ PYBIND11_MODULE(my_module, m) {
 
     py::class_<DynamicFeaturesObs>(m, "DynamicFeaturesObs")
         .def(py::init<long, int>())
-        .def("getPseudoCosts", &DynamicFeaturesObs::getPseudoCosts, "Get info 1");
-
-    m.def("tmp", tmp);
+        .def("getPseudoCosts", &DynamicFeaturesObs::getPseudoCosts, "Get info 1")
+        .def("getInfeasibilityStatistics", &DynamicFeaturesObs::getInfeasibilityStatistics, "Get info 1")
+        .def("getStrongBranchingScore", &DynamicFeaturesObs::getStrongBranchingScore, "Get info 1");
 }

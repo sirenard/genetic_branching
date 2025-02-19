@@ -31,11 +31,20 @@ public:
 
     }
 
+    /**
+     * Get the variable objective's coefficient
+     * @return
+     */
     std::vector<float> computeObjCoefficient(){
 
         return {static_cast<float>(SCIPvarGetObj(var))};
     }
 
+    /**
+     * Statistics about variable's constraint coefficient. Report the number of constraint in which it is active
+     * And statistics on positive/negative coefficient (mean, stdev, min, max)
+     * @return vector of 9 features
+     */
     std::vector<float> computeNonZeroCoefficientsStatistics(){
         auto col = SCIPvarGetCol(var);
 
@@ -58,6 +67,14 @@ public:
         };
     }
 
+    /**
+    * Stats. for constraint degrees.
+    *
+    * The degree of a constraint is the number of variables that participate in it.
+    * A variable may participate in multiple constraints, and statistics over those constraints'
+    * degrees are used. (mean, stdev, min, max)
+    * @return Vector of 4 features
+    */
     std::vector<float> computeConstraintsDegreeStatistics() {
         std::vector<float> degrees;
 
@@ -79,10 +96,6 @@ public:
             stats.min,
             stats.max,
         };
-    }
-
-    ~StaticFeaturesObs() {
-        // SCIPreleaseVar(scip, &var);
     }
 };
 
