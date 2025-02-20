@@ -1,0 +1,25 @@
+//
+// Created by simon on 20/02/25.
+//
+
+#ifndef OBS_H
+#define OBS_H
+
+#include <vector>
+
+class Obs {
+protected:
+    std::vector<double> features;
+    std::vector<bool> computed;
+    virtual void compute(int index)=0;
+public:
+    Obs(int size);
+
+    double operator[](int index);
+    void reset();
+
+    virtual ~Obs()=default;
+};
+
+
+#endif //OBS_H

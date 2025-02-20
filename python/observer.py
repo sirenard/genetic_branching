@@ -4,18 +4,22 @@ import my_module
 
 from boundml.observers import Observer
 
-from observation import StaticObservation, TreeObservation, Observation, DynamicObservation
+from observation import Observation, ObservationWrapper
 
 
 class MyObserver(Observer):
     def __init__(self):
         super().__init__()
         self.static_observations = {}
+        self.tree_observation = None
+        self.dynamic_observations = {}
         self.first = True
 
     def reset(self, instance_path, seed=None):
         self.first = True
         self.static_observations = {}
+        self.tree_observation = None
+        self.dynamic_observations = {}
 
     def extract(self, model, done):
         m: pyscipopt.Model = model.as_pyscipopt()
@@ -23,23 +27,29 @@ class MyObserver(Observer):
         n_vars = int(m.getNVars())
         prob_indexes = sorted([var.getCol().getLPPos() for var in candidates])
 
+        p = model.get_scip_ptr()
+        if self.first:
+            self.tree_observation = ObservationWrapper(my_module.TreeFeaturesObs, p)
+            self.first = False
 
-        tree_observations = TreeObservation(model)
+        self.tree_observation.reset()
 
         res = [None] * n_vars
 
         for index in prob_indexes:
             if index not in self.static_observations:
-                self.static_observations[index] = StaticObservation(model, index)
+                self.static_observations[index] = ObservationWrapper(my_module.StaticFeaturesObs, p, index)
+                self.dynamic_observations[index] = ObservationWrapper(my_module.DynamicFeaturesObs, p, index)
 
-            dynamic_obsevation = DynamicObservation(model, index)
-            res[index] = [val for val in Observation(self.static_observations[index], tree_observations, dynamic_obsevation)]
-            # res[index] = [val for val in Observation(None, tree_observations, dynamic_obsevation)]
+            self.static_observations[index].reset()
+            self.dynamic_observations[index].reset()
+
+            res[index] = [val for val in Observation(self.static_observations[index], self.tree_observation, self.dynamic_observations[index])]
 
         return res
 
     def __len__(self):
-        return Observation.size
+        return my_module.StaticFeaturesObs.size() + my_module.DynamicFeaturesObs.size() + my_module.TreeFeaturesObs.size()
 
 class KhalilObserver(Observer):
     def __init__(self):
@@ -62,4 +72,13 @@ class KhalilObserver(Observer):
         for index in prob_indexes:
             res[index] = [float(v) for v in obs[index]]
         return res
+
+    def __len__(self):
+        return 72
+
+    def __getstate__(self):
+        return []
+
+    def __setstate__(self, _):
+        self.__init__()
 

@@ -5,54 +5,75 @@
 #include "TreeFeaturesObs.h"
 #include <scip/event_estim.h>
 
-TreeFeaturesObs::TreeFeaturesObs(long scipl): scip(reinterpret_cast<SCIP *>(scipl))  {}
+TreeFeaturesObs::TreeFeaturesObs(long scipl): Obs(size), scip(reinterpret_cast<SCIP *>(scipl)) {}
 
-float TreeFeaturesObs::gap() {
+void TreeFeaturesObs::compute(int index) {
+    double value;
+    switch (index) {
+        case 0:
+            value = gap();
+            break;
+        case 1:
+            value = leafFrequency();
+            break;
+        case 2:
+            value = treeWeight();
+            break;
+        case 3:
+            value = completion();
+            break;
+        case 4:
+            value = depth();
+            break;
+        default:
+            value = 0;
+    }
+
+    features[index] = value;
+    computed[index] = true;
+}
+
+
+double TreeFeaturesObs::depth() {
+    return SCIPgetDepth(scip);
+}
+
+double TreeFeaturesObs::gap() {
     return SCIPgetGap(scip);
 }
 
-float TreeFeaturesObs::leafFrequency() {
+double TreeFeaturesObs::leafFrequency() {
     int k = SCIPgetNNodes(scip);
     int fk = SCIPgetNLeaves(scip);
-    return 1.0/static_cast<float>(k) * (static_cast<float>(fk) - 0.5);
+    return 1.0 / static_cast<double>(k) * (static_cast<double>(fk) - 0.5);
 }
 
-float TreeFeaturesObs::openNodes() {
-
+double TreeFeaturesObs::openNodes() {
 }
 
-float TreeFeaturesObs::ssg() {
-
+double TreeFeaturesObs::ssg() {
 }
 
-float TreeFeaturesObs::treeWeight() {
-    float treeWeight = 0;
+double TreeFeaturesObs::treeWeight() {
+    double treeWeight = 0;
 
     int nleaves = SCIPgetNLeaves(scip);
-    SCIP_NODE** leaves = new SCIP_NODE*[nleaves];
+    SCIP_NODE **leaves = new SCIP_NODE *[nleaves];
 
     SCIPgetLeaves(scip, &leaves, &nleaves);
 
     for (int i = 0; i < nleaves; i++) {
-        SCIP_NODE* node = leaves[i];
-        treeWeight += std::pow(2,-SCIPnodeGetDepth(node));
+        SCIP_NODE *node = leaves[i];
+        treeWeight += std::pow(2, -SCIPnodeGetDepth(node));
     }
 
     return treeWeight;
 }
 
-float TreeFeaturesObs::completion() {
+double TreeFeaturesObs::completion() {
     int nnodes = SCIPgetNNodes(scip);
     double estimate = SCIPgetTreesizeEstimation(scip);
 
-    return static_cast<float>(nnodes) / static_cast<float>(estimate);
+    return static_cast<double>(nnodes) / estimate;
 }
 
-std::vector<float> TreeFeaturesObs::computeFeatures() {
-    return {
-        gap(),
-        leafFrequency(),
-        treeWeight(),
-        completion(),
-    };
-}

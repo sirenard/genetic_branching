@@ -11,7 +11,8 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
     return SCIProwIsInLP(row) && (SCIPisEQ(scip, activity, rhs) || SCIPisEQ(scip, activity, lhs));
 }
 
-DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): scip((SCIP *) scipl) {
+DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): Obs(size), scip((SCIP *) scipl) {
+
     int nVars = SCIPgetNVars(scip);
     auto vars = SCIPgetVars(scip);
     for (int i = 0; i < nVars; ++i) {
@@ -22,23 +23,47 @@ DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): scip((SCIP *)
     }
 }
 
-std::vector<float> DynamicFeaturesObs::getPseudoCosts() {
-    float value = SCIPvarGetLPSol(var);
-    float downFrac = value - floor(value);
-    float upFrac = 1 - downFrac;
+void DynamicFeaturesObs::compute(int index){
+    std::vector<double> tmp;
+    int start = 0;
+    if (index < 3) {
+        tmp = getPseudoCosts();
+    } else if (index < 7) {
+        start = 3;
+        tmp = getInfeasibilityStatistics();
+    } else if (index < 9) {
+        start = 7;
+        tmp = getStrongBranchingScore();
+    } else if (index < 11) {
+        start = 9;
+        tmp = getNSb();
+    }
+
+    for (int i=0; i<tmp.size(); i++) {
+        features[i+start] = tmp[i];
+        computed[i+start] = true;
+    }
+    // std::copy_backward(tmp.begin(), tmp.end(), features.begin()+start);
+    // std::fill(computed.begin() + start, computed.begin() + start + tmp.size(), true);
+}
+
+std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
+    double value = SCIPvarGetLPSol(var);
+    double downFrac = value - floor(value);
+    double upFrac = 1 - downFrac;
 
     return {
-        static_cast<float>(SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS)) * upFrac,
-        static_cast<float>(SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS)) * downFrac,
-        static_cast<float>(SCIPgetVarRedcost(scip, var)),
+        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS) * upFrac,
+        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS) * downFrac,
+        SCIPgetVarRedcost(scip, var),
     };
 }
 
-std::vector<float> DynamicFeaturesObs::getInfeasibilityStatistics() {
-    auto const n_infeasibles_up = static_cast<float>(SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_UPWARDS));
-    auto const n_infeasibles_down = static_cast<float>(SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS));
-    auto const n_branchings_up = static_cast<float>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS));
-    auto const n_branchings_down = static_cast<float>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_DOWNWARDS));
+std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
+    auto const n_infeasibles_up = SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_UPWARDS);
+    auto const n_infeasibles_down = SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS);
+    auto const n_branchings_up = static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS));
+    auto const n_branchings_down = static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_DOWNWARDS));
 
     return{
         n_infeasibles_up,
@@ -48,7 +73,7 @@ std::vector<float> DynamicFeaturesObs::getInfeasibilityStatistics() {
     };
 }
 
-std::vector<float> DynamicFeaturesObs::getStrongBranchingScore() {
+std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
    int itlim = INT32_MAX;
    double down;
    double up;
@@ -76,10 +101,25 @@ std::vector<float> DynamicFeaturesObs::getStrongBranchingScore() {
         &lperror
     );
 
-    auto lp = static_cast<float>(SCIPgetLPObjval(scip));
+    auto lp = SCIPgetLPObjval(scip);
+
+    if (!upinf) {
+        ++nSbUp;
+    }
+
+    if (!downinf) {
+        ++nSbDown;
+    }
 
     return {
-        static_cast<float>(down) - lp,
-        static_cast<float>(up) - lp,
+        down - lp,
+        up - lp,
+    };
+}
+
+std::vector<double> DynamicFeaturesObs::getNSb() {
+    return {
+        static_cast<double>(nSbUp),
+        static_cast<double>(nSbDown),
     };
 }

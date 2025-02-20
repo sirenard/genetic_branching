@@ -35,5 +35,5 @@ template<typename T, typename N> statistics<T, N>::statistics(T data){
   statistics(data, [](float value){return true;});
 }
 
-template class statistics<ArrayView<double>, float>;
-template class statistics<std::vector<float>, float>;
+template class statistics<ArrayView<double>, double>;
+template class statistics<std::vector<double>, double>;

@@ -11,33 +11,20 @@
 #include <scip/scip.h>
 
 #include "ArrayView.h"
+#include "Obs.h"
 #include "statistics.h"
 
-class StaticFeaturesObs{
+class StaticFeaturesObs: public Obs{
     SCIP* scip;
     SCIP_VAR* var {};
-public:
-    StaticFeaturesObs(long scipl, int probIndex): scip((SCIP*)scipl) {
-        int nVars = SCIPgetNVars(scip);
-        auto vars = SCIPgetVars(scip);
-        for (int i=0; i<nVars; ++i) {
-            auto var = vars[i];
-            // SCIP_VAR* transformedVar;
-            // SCIPgetTransformedVar(scip, var, &transformedVar);
-            if (SCIPvarGetProbindex(var) == probIndex) {
-                this->var = var;
-            }
-        }
-
-    }
 
     /**
      * Get the variable objective's coefficient
      * @return
      */
-    std::vector<float> computeObjCoefficient(){
+    std::vector<double> computeObjCoefficient(){
 
-        return {static_cast<float>(SCIPvarGetObj(var))};
+        return {static_cast<double>(SCIPvarGetObj(var))};
     }
 
     /**
@@ -45,17 +32,17 @@ public:
      * And statistics on positive/negative coefficient (mean, stdev, min, max)
      * @return vector of 9 features
      */
-    std::vector<float> computeNonZeroCoefficientsStatistics(){
+    std::vector<double> computeNonZeroCoefficientsStatistics(){
         auto col = SCIPvarGetCol(var);
 
         int count = SCIPcolGetNLPNonz(col);
         auto data = ArrayView(SCIPcolGetVals(col), count);
 
-        auto positiveStats = statistics<ArrayView<double>, float>(data, [](float val){return val > 0;;});
-        auto negativeStats = statistics<ArrayView<double>, float>(data, [](float val){return val < 0;});
+        auto positiveStats = statistics<ArrayView<double>, double>(data, [](double val){return val > 0;;});
+        auto negativeStats = statistics<ArrayView<double>, double>(data, [](double val){return val < 0;});
 
         return {
-            static_cast<float>(count),
+            static_cast<double>(count),
             positiveStats.mean,
             positiveStats.stdev,
             positiveStats.min,
@@ -75,8 +62,8 @@ public:
     * degrees are used. (mean, stdev, min, max)
     * @return Vector of 4 features
     */
-    std::vector<float> computeConstraintsDegreeStatistics() {
-        std::vector<float> degrees;
+    std::vector<double> computeConstraintsDegreeStatistics() {
+        std::vector<double> degrees;
 
         auto col = SCIPvarGetCol(var);
         auto const n_rows = SCIPcolGetNNonz(col);
@@ -87,7 +74,7 @@ public:
             degrees.push_back(SCIProwGetNNonz(row));
         }
 
-        auto stats = statistics<std::vector<float>, float>(degrees);
+        auto stats = statistics<std::vector<double>, double>(degrees);
 
 
         return {
@@ -97,6 +84,44 @@ public:
             stats.max,
         };
     }
+
+    void compute(int index) override {
+        std::vector<double> tmp;
+        int start = 0;
+        if (index < 1) {
+            tmp = computeObjCoefficient();
+        } else if (index < 10) {
+            start = 1;
+            tmp = computeNonZeroCoefficientsStatistics();
+        } else if (index < 14) {
+            start = 10;
+            tmp = computeConstraintsDegreeStatistics();
+        }
+
+        for (int i=0; i<tmp.size(); i++) {
+            features[i+start] = tmp[i];
+            computed[i+start] = true;
+        }
+        // std::copy_backward(tmp.begin(), tmp.end(), features.begin()+start);
+        // std::fill(computed.begin() + start, computed.begin() + start + tmp.size(), true);
+    }
+public:
+    static const int size = 14;
+    StaticFeaturesObs(long scipl, int probIndex): Obs(14), scip((SCIP*)scipl) {
+        int nVars = SCIPgetNVars(scip);
+        auto vars = SCIPgetVars(scip);
+        for (int i=0; i<nVars; ++i) {
+            auto var = vars[i];
+            // SCIP_VAR* transformedVar;
+            // SCIPgetTransformedVar(scip, var, &transformedVar);
+            if (SCIPvarGetProbindex(var) == probIndex) {
+                this->var = var;
+            }
+        }
+
+    }
+
+
 };
 
 

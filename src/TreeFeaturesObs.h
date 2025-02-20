@@ -9,27 +9,25 @@
 
 #include <scip/scip.h>
 
-class TreeFeaturesObs{
+#include "Obs.h"
+
+class TreeFeaturesObs: public Obs {
     SCIP* scip;
 
-    float gap();
-    float leafFrequency();
-    float openNodes();
-    float ssg();
-    float treeWeight();
-    float completion();
+    double gap();
+    double leafFrequency();
+    double openNodes();
+    double ssg();
+    double treeWeight();
+    double completion();
+    double depth();
+
+
 public:
+    static const int size = 5;
     explicit TreeFeaturesObs(long scipl);
 
-    /**
-     * Extract featurse about the B&B tree:
-     * gap
-     * leaf frequency
-     * tree weight
-     * estimation of the completion
-     * @return Vector of 4 features
-     */
-    std::vector<float> computeFeatures();
+    void compute(int index) override;
 };
 
 
