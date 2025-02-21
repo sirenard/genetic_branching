@@ -74,22 +74,24 @@ std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
 }
 
 std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
-   int itlim = INT32_MAX;
-   double down;
-   double up;
-   unsigned int downvalid;
-   unsigned int upvalid;
-   unsigned int downinf;
-   unsigned int upinf;
-   unsigned int downconflict;
-   unsigned int upconflict;
-   unsigned int lperror;
+    int itlim = INT_MAX;
+    double up = -SCIPinfinity(scip);
+    double down = -SCIPinfinity(scip);
+    unsigned int downvalid;
+    unsigned int upvalid;
+    unsigned int downinf;
+    unsigned int upinf;
+    unsigned int downconflict;
+    unsigned int upconflict;
+    unsigned int lperror;
+    auto lpobjval = SCIPgetLPObjval(scip);
+    auto val = SCIPvarGetLPSol(var);
 
-    SCIPgetVarsStrongbranchesFrac(
+    SCIPgetVarStrongbranchFrac(
         scip,
-        &var,
-        1,
+        var,
         itlim,
+        0,
         &down,
         &up,
         &downvalid,
@@ -101,25 +103,32 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
         &lperror
     );
 
-    auto lp = SCIPgetLPObjval(scip);
+    down = MAX(down, lpobjval);
+    up = MAX(up, lpobjval);
+    double downgain = down - lpobjval;
+    double upgain = up - lpobjval;
 
-    if (!upinf) {
-        ++nSbUp;
+    /* update variable pseudo cost values */
+    if( !downinf && downvalid )
+    {
+        SCIPupdateVarPseudocost(scip, var, 0.0 - SCIPfrac(scip, val), downgain, 1.0);
+        nSbDown++;
     }
-
-    if (!downinf) {
-        ++nSbDown;
+    if( !upinf && upvalid )
+    {
+        SCIPupdateVarPseudocost(scip, var, 1.0 - SCIPfrac(scip, val), upgain, 1.0);
+        nSbUp++;
     }
 
     return {
-        down - lp,
-        up - lp,
+        downgain,
+        upgain,
     };
 }
 
 std::vector<double> DynamicFeaturesObs::getNSb() {
     return {
-        static_cast<double>(nSbUp),
-        static_cast<double>(nSbDown),
+        nSbUp,
+        nSbDown,
     };
 }
