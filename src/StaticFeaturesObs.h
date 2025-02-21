@@ -24,7 +24,7 @@ class StaticFeaturesObs: public Obs{
      */
     std::vector<double> computeObjCoefficient(){
 
-        return {static_cast<double>(SCIPvarGetObj(var))};
+        return {(SCIPvarGetObj(var))};
     }
 
     /**
@@ -98,6 +98,7 @@ class StaticFeaturesObs: public Obs{
             tmp = computeConstraintsDegreeStatistics();
         }
 
+
         for (int i=0; i<tmp.size(); i++) {
             features[i+start] = tmp[i];
             computed[i+start] = true;
@@ -108,20 +109,17 @@ class StaticFeaturesObs: public Obs{
 public:
     static const int size = 14;
     StaticFeaturesObs(long scipl, int probIndex): Obs(14), scip((SCIP*)scipl) {
-        int nVars = SCIPgetNVars(scip);
-        auto vars = SCIPgetVars(scip);
-        for (int i=0; i<nVars; ++i) {
-            auto var = vars[i];
-            // SCIP_VAR* transformedVar;
-            // SCIPgetTransformedVar(scip, var, &transformedVar);
-            if (SCIPvarGetProbindex(var) == probIndex) {
-                this->var = var;
+        int nCols = SCIPgetNLPCols(scip);
+        auto cols = SCIPgetLPCols(scip);
+
+        for (int i=0; i<nCols; i++) {
+            auto col = cols[i];
+            if (SCIPcolGetVarProbindex(col) == probIndex) {
+                var = SCIPcolGetVar(col);
+                return;
             }
         }
-
     }
-
-
 };
 
 

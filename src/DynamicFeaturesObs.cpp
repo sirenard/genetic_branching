@@ -4,6 +4,8 @@
 
 #include "DynamicFeaturesObs.h"
 
+#include "utils.h"
+
 bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
     auto const activity = SCIPgetRowActivity(scip, row);
     auto const lhs = SCIProwGetLhs(row);
@@ -12,13 +14,14 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
 }
 
 DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): Obs(size), scip((SCIP *) scipl) {
+    int nCols = SCIPgetNLPCols(scip);
+    auto cols = SCIPgetLPCols(scip);
 
-    int nVars = SCIPgetNVars(scip);
-    auto vars = SCIPgetVars(scip);
-    for (int i = 0; i < nVars; ++i) {
-        auto var = vars[i];
-        if (SCIPvarGetProbindex(var) == probIndex) {
-            this->var = var;
+    for (int i=0; i<nCols; i++) {
+        auto col = cols[i];
+        if (SCIPcolGetVarProbindex(col) == probIndex) {
+            var = SCIPcolGetVar(col);
+            return;
         }
     }
 }
@@ -26,36 +29,47 @@ DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): Obs(size), sc
 void DynamicFeaturesObs::compute(int index){
     std::vector<double> tmp;
     int start = 0;
-    if (index < 3) {
+    if (index < 5) {
         tmp = getPseudoCosts();
-    } else if (index < 7) {
-        start = 3;
-        tmp = getInfeasibilityStatistics();
     } else if (index < 9) {
-        start = 7;
-        tmp = getStrongBranchingScore();
+        start = 5;
+        tmp = getInfeasibilityStatistics();
     } else if (index < 11) {
         start = 9;
+        tmp = getStrongBranchingScore();
+    } else if (index < 13) {
+        start = 11;
         tmp = getNSb();
+    } else if (index < 17) {
+        start = 13;
+        tmp = getInfeasibilityStatistics();
     }
 
     for (int i=0; i<tmp.size(); i++) {
         features[i+start] = tmp[i];
         computed[i+start] = true;
     }
-    // std::copy_backward(tmp.begin(), tmp.end(), features.begin()+start);
-    // std::fill(computed.begin() + start, computed.begin() + start + tmp.size(), true);
 }
 
 std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
-    double value = SCIPvarGetLPSol(var);
-    double downFrac = value - floor(value);
-    double upFrac = 1 - downFrac;
+    auto col = SCIPvarGetCol(var);
+
+    auto const solval = SCIPcolGetPrimsol(col);
+    auto const floor_distance = SCIPfeasFrac(scip, solval);
+    auto const ceil_distance = 1. - floor_distance;
+    auto const weighted_pseudocost_up = ceil_distance * SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS);
+    auto const weighted_pseudocost_down = floor_distance * SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS);
+    auto constexpr epsilon = 1e-5;
+    auto const wpu_approx = std::max(weighted_pseudocost_up, epsilon);
+    auto const wpd_approx = std::max(weighted_pseudocost_down, epsilon);
+    auto const weighted_pseudocost_ratio = safe_div<double>(std::min(wpu_approx, wpd_approx), std::max(wpu_approx, wpd_approx));
 
     return {
-        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS) * upFrac,
-        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS) * downFrac,
-        SCIPgetVarRedcost(scip, var),
+        std::min(floor_distance, ceil_distance),
+        ceil_distance,
+        weighted_pseudocost_up,
+        weighted_pseudocost_down,
+        weighted_pseudocost_ratio,
     };
 }
 
@@ -130,5 +144,14 @@ std::vector<double> DynamicFeaturesObs::getNSb() {
     return {
         nSbUp,
         nSbDown,
+    };
+}
+
+std::vector<double> DynamicFeaturesObs::computeInfeasibilityStats() {
+    return{
+        SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_UPWARDS),
+        SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS),
+        static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS)),
+        static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_DOWNWARDS)),
     };
 }
