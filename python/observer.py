@@ -15,16 +15,17 @@ class MyObserver(Observer):
         self.dynamic_observations = {}
         self.first = True
 
-    def reset(self, instance_path, seed=None):
-        self.first = True
+    def before_reset(self, instance_path, seed=None):
         self.static_observations = {}
         self.tree_observation = None
         self.dynamic_observations = {}
+        self.first = True
 
     def extract(self, model, done):
         m: pyscipopt.Model = model.as_pyscipopt()
         candidates, *_ = m.getLPBranchCands()
         n_vars = int(m.getNVars())
+
         prob_indexes = sorted([var.getCol().getLPPos() for var in candidates])
 
         p = model.get_scip_ptr()
@@ -50,6 +51,7 @@ class MyObserver(Observer):
 
     def __len__(self):
         return my_module.StaticFeaturesObs.size() + my_module.DynamicFeaturesObs.size() + my_module.TreeFeaturesObs.size()
+        # return my_module.DynamicFeaturesObs.size() + my_module.TreeFeaturesObs.size()
 
 class KhalilObserver(Observer):
     def __init__(self):
