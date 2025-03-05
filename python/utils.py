@@ -1,6 +1,8 @@
 import multiprocessing
 import operator
 import random
+from os import times
+
 import numpy as np
 
 
@@ -65,14 +67,14 @@ def evalSymbReg(individual, pool: multiprocessing.Pool, instances_path, baseline
 def mapp(f, individuals, args):
     args = args[:]
     callbacks = []
-    instances, nnodes_baseline, n = args.pop(0)
+    instances, times_baseline, n = args.pop(0)
 
     if n is not None:
         indexes = random.choices(range(len(instances)), k=n)
         instances = [instances[i] for i in indexes]
-        nnodes_baseline = [nnodes_baseline[i] for i in indexes]
+        times_baseline = [times_baseline[i] for i in indexes]
 
-    baseline_average_time = shifted_geometric_mean(nnodes_baseline, 1)
+    baseline_average_time = shifted_geometric_mean(times_baseline, 1)
 
     with Pool() as pool:
         for individual in individuals:
@@ -98,7 +100,7 @@ def if_then_else(cond, then, default):
         return default
 
 
-def create_tool_box(observer = None, instances_paths = None, scip_params = None, n_instance=None, nnodes_baseline = None):
+def create_tool_box(observer = None, instances_paths = None, scip_params = None, n_instance=None, times_baseline = None):
     if not hasattr(create_tool_box, "toolbox"):
         create_tool_box.toolbox = None
 
@@ -140,7 +142,7 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
     assert (instances_paths is None and scip_params is None) or (instances_paths is not None and scip_params is not None), "If one argument is provided, the 3 must be set"
     if instances_paths is not None:
-        args = [(instances_paths, nnodes_baseline, n_instance), observer, scip_params]
+        args = [(instances_paths, times_baseline, n_instance), observer, scip_params]
         toolbox.register("map", mapp, args=args)
 
     create_tool_box.toolbox = toolbox
@@ -150,7 +152,7 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 def solve_rb(path, scip_params={}):
     solver = solvers.ClassicSolver("relpscost", scip_params)
     solver.solve(path)
-    return solver["estimate_nnodes"]
+    return solver["time"]
 
 def train(observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
     instances_path = []
@@ -165,11 +167,11 @@ def train(observer, instances, pop_size, n_generations, best_individual_path="be
         files.append(prob_file)
 
     with Pool() as pool:
-        nnodes_baseline = pool.map(solve_rb, instances_path)
+        times_baseline = pool.map(solve_rb, instances_path)
 
     print("Starting evolution...")
 
-    toolbox = create_tool_box(observer, instances_path, scip_params, n_instances, nnodes_baseline)
+    toolbox = create_tool_box(observer, instances_path, scip_params, n_instances, times_baseline)
 
     pop = toolbox.population(n=pop_size)
     hof = tools.HallOfFame(1)
