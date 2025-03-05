@@ -4,7 +4,11 @@
 
 #include "Obs.h"
 
-Obs::Obs(int size): features(size), computed(size, false) {}
+#include <iostream>
+
+#include "utils.h"
+
+Obs::Obs(long scipl, int size): features(size), computed(size, false), scip(reinterpret_cast<SCIP *>(scipl)) {}
 
 double Obs::operator[](int index) {
     if (!computed[index]) {
@@ -12,6 +16,12 @@ double Obs::operator[](int index) {
     }
 
     return features[index];
+}
+
+void Obs::setVar(int probIndex) {
+    if (probIndex >= 0) {
+        var = getVarFromProbIndex(scip, probIndex);
+    }
 }
 
 void Obs::reset() {

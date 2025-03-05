@@ -13,17 +13,7 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
     return SCIProwIsInLP(row) && (SCIPisEQ(scip, activity, rhs) || SCIPisEQ(scip, activity, lhs));
 }
 
-DynamicFeaturesObs::DynamicFeaturesObs(long scipl, int probIndex): Obs(size), scip((SCIP *) scipl) {
-    int nCols = SCIPgetNLPCols(scip);
-    auto cols = SCIPgetLPCols(scip);
-
-    for (int i=0; i<nCols; i++) {
-        auto col = cols[i];
-        if (SCIPcolGetVarProbindex(col) == probIndex) {
-            var = SCIPcolGetVar(col);
-            return;
-        }
-    }
+DynamicFeaturesObs::DynamicFeaturesObs(long scipl): Obs(scipl, size) {
 }
 
 void DynamicFeaturesObs::compute(int index){

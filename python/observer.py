@@ -39,11 +39,13 @@ class MyObserver(Observer):
 
         for index in prob_indexes:
             if index not in self.static_observations:
-                self.static_observations[index] = ObservationWrapper(my_module.StaticFeaturesObs, p, index)
-                self.dynamic_observations[index] = ObservationWrapper(my_module.DynamicFeaturesObs, p, index)
+                self.static_observations[index] = ObservationWrapper(my_module.StaticFeaturesObs, p)
+                self.dynamic_observations[index] = ObservationWrapper(my_module.DynamicFeaturesObs, p)
 
-            self.static_observations[index].reset()
             self.dynamic_observations[index].reset()
+
+            self.static_observations[index].set_var(index)
+            self.dynamic_observations[index].set_var(index)
 
             res[index] = [val for val in Observation(self.static_observations[index], self.tree_observation, self.dynamic_observations[index])]
 

@@ -5,7 +5,7 @@
 #include "TreeFeaturesObs.h"
 #include <scip/event_estim.h>
 
-TreeFeaturesObs::TreeFeaturesObs(long scipl): Obs(size), scip(reinterpret_cast<SCIP *>(scipl)) {}
+TreeFeaturesObs::TreeFeaturesObs(long scipl): Obs(scipl, size){}
 
 void TreeFeaturesObs::compute(int index) {
     double value;

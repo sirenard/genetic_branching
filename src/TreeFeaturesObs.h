@@ -12,8 +12,6 @@
 #include "Obs.h"
 
 class TreeFeaturesObs: public Obs {
-    SCIP* scip;
-
     double gap();
     double leafFrequency();
     double openNodes();

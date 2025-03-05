@@ -20,6 +20,9 @@ class ObservationWrapper:
     def reset(self):
         self.observation.reset()
 
+    def set_var(self, index):
+        self.observation.set_var(index)
+
     def __len__(self):
         return self.observation.size()
 

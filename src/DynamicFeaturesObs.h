@@ -12,9 +12,6 @@
 #include "Obs.h"
 
 class DynamicFeaturesObs: public Obs{
-    SCIP* scip;
-    SCIP_VAR* var {};
-
     double nSbUp {0};
     double nSbDown {0};
 
@@ -54,7 +51,7 @@ class DynamicFeaturesObs: public Obs{
     void compute(int index) override;
 public:
     static const int size = 17;
-    DynamicFeaturesObs(long scipl, int probIndex);
+    explicit DynamicFeaturesObs(long scipl);
 
 };
 

@@ -15,9 +15,6 @@
 #include "statistics.h"
 
 class StaticFeaturesObs: public Obs{
-    SCIP* scip;
-    SCIP_VAR* var {};
-
     /**
      * Get the variable objective's coefficient
      * @return
@@ -108,17 +105,7 @@ class StaticFeaturesObs: public Obs{
     }
 public:
     static const int size = 14;
-    StaticFeaturesObs(long scipl, int probIndex): Obs(14), scip((SCIP*)scipl) {
-        int nCols = SCIPgetNLPCols(scip);
-        auto cols = SCIPgetLPCols(scip);
-
-        for (int i=0; i<nCols; i++) {
-            auto col = cols[i];
-            if (SCIPcolGetVarProbindex(col) == probIndex) {
-                var = SCIPcolGetVar(col);
-                return;
-            }
-        }
+    explicit StaticFeaturesObs(long scipl): Obs(scipl, size) {
     }
 };
 
