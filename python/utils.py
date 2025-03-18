@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import operator
 import random
@@ -18,6 +19,8 @@ from deap import creator
 from deap import tools
 from deap import gp
 import deap
+from objproxies import LazyProxy
+
 from functor_observer import FunctorObserver
 
 
@@ -109,14 +112,22 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
     pset = gp.PrimitiveSet("MAIN", len(observer))
     # pset = gp.PrimitiveSet("MAIN", 72)
-    pset.addPrimitive(operator.add, 2)
-    pset.addPrimitive(operator.sub, 2)
-    pset.addPrimitive(operator.mul, 2)
-    pset.addPrimitive(protectedDiv, 2)
-    pset.addPrimitive(operator.lt, 2)
-    pset.addPrimitive(operator.gt, 2)
-    pset.addPrimitive(operator.neg, 1)
-    pset.addPrimitive(if_then_else, 3)
+    def add_operator(operator, arity, name):
+        f = lambda *args: LazyProxy(lambda: operator(*args))
+        pset.addPrimitive(f, arity, name)
+
+    add_operator(operator.add, 2, "add")
+    add_operator(operator.sub, 2, "sub")
+    add_operator(operator.mul, 2, "mul")
+    add_operator(protectedDiv, 2, "div")
+    add_operator(operator.lt, 2, "lt")
+    add_operator(operator.gt, 2, "gt")
+    add_operator(operator.neg, 1, "neg")
+    add_operator(if_then_else, 3, "if_then_else")
+    add_operator(min, 2, "min")
+    add_operator(max, 2, "max")
+    add_operator(math.log2, 1, "log2")
+    add_operator(round, 1, "round")
 
     for i in range(-3, 5):
         pset.addTerminal(2**i)
@@ -146,13 +157,17 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
         toolbox.register("map", mapp, args=args)
 
     create_tool_box.toolbox = toolbox
-    return toolbox
+    return toolbox, pset
 
 
 def solve_rb(path, scip_params={}):
     solver = solvers.ClassicSolver("relpscost", scip_params)
     solver.solve(path)
     return solver["time"]
+
+def get_known_individuals(pset):
+    relpscost = creator.Individual(gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG30,ARG31),8), mul(ARG28,ARG29), mul(ARG25,arg26))", pset))
+    return []
 
 def train(observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
     instances_path = []
@@ -171,9 +186,11 @@ def train(observer, instances, pop_size, n_generations, best_individual_path="be
 
     print("Starting evolution...")
 
-    toolbox = create_tool_box(observer, instances_path, scip_params, n_instances, times_baseline)
+    toolbox, pset = create_tool_box(observer, instances_path, scip_params, n_instances, times_baseline)
 
-    pop = toolbox.population(n=pop_size)
+    known_individuals = get_known_individuals(pset)
+    pop = toolbox.population(n=pop_size - len(known_individuals))
+    pop.extend(known_individuals)
     hof = tools.HallOfFame(1)
 
     stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -186,7 +203,7 @@ def train(observer, instances, pop_size, n_generations, best_individual_path="be
 
     for i in range(n_generations):
         print(i)
-        pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.3, 1, stats=mstats,
+        pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 1, stats=mstats,
                                        halloffame=hof, verbose=True)
 
         # best = min(pop, key=lambda ind: ind.fitness.values[0])
