@@ -30,9 +30,6 @@ void DynamicFeaturesObs::compute(int index){
     } else if (index < 13) {
         start = 11;
         tmp = getNSb();
-    } else if (index < 17) {
-        start = 13;
-        tmp = getInfeasibilityStatistics();
     }
 
     for (int i=0; i<tmp.size(); i++) {
@@ -134,14 +131,5 @@ std::vector<double> DynamicFeaturesObs::getNSb() {
     return {
         nSbUp,
         nSbDown,
-    };
-}
-
-std::vector<double> DynamicFeaturesObs::computeInfeasibilityStats() {
-    return{
-        SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_UPWARDS),
-        SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS),
-        static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS)),
-        static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_DOWNWARDS)),
     };
 }

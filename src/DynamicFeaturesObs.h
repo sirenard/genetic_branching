@@ -42,15 +42,9 @@ class DynamicFeaturesObs: public Obs{
      */
     std::vector<double> getNSb();
 
-    /**
-     *
-     * @return
-     */
-    std::vector<double> computeInfeasibilityStats();
-
     void compute(int index) override;
 public:
-    static const int size = 17;
+    static const int size = 13;
     explicit DynamicFeaturesObs(long scipl);
 
 };
