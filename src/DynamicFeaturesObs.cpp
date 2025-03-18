@@ -4,6 +4,8 @@
 
 #include "DynamicFeaturesObs.h"
 
+#include <iostream>
+
 #include "utils.h"
 
 bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
@@ -16,7 +18,7 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
 DynamicFeaturesObs::DynamicFeaturesObs(long scipl): Obs(scipl, size) {
 }
 
-void DynamicFeaturesObs::compute(int index){
+void DynamicFeaturesObs::compute(int index) {
     std::vector<double> tmp;
     int start = 0;
     if (index < 5) {
@@ -32,9 +34,9 @@ void DynamicFeaturesObs::compute(int index){
         tmp = getNSb();
     }
 
-    for (int i=0; i<tmp.size(); i++) {
-        features[i+start] = tmp[i];
-        computed[i+start] = true;
+    for (int i = 0; i < tmp.size(); i++) {
+        features[i + start] = tmp[i];
+        computed[i + start] = true;
     }
 }
 
@@ -49,13 +51,14 @@ std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
     auto constexpr epsilon = 1e-5;
     auto const wpu_approx = std::max(weighted_pseudocost_up, epsilon);
     auto const wpd_approx = std::max(weighted_pseudocost_down, epsilon);
-    auto const weighted_pseudocost_ratio = safe_div<double>(std::min(wpu_approx, wpd_approx), std::max(wpu_approx, wpd_approx));
+    auto const weighted_pseudocost_ratio = safe_div<double>(std::min(wpu_approx, wpd_approx),
+                                                            std::max(wpu_approx, wpd_approx));
 
     return {
         std::min(floor_distance, ceil_distance),
         ceil_distance,
-        weighted_pseudocost_up,
-        weighted_pseudocost_down,
+        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS),
+        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS),
         weighted_pseudocost_ratio,
     };
 }
@@ -65,8 +68,7 @@ std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
     auto const n_infeasibles_down = SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS);
     auto const n_branchings_up = static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS));
     auto const n_branchings_down = static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_DOWNWARDS));
-
-    return{
+    return {
         n_infeasibles_up,
         n_infeasibles_down,
         n_branchings_up,
@@ -75,7 +77,7 @@ std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
 }
 
 std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
-    int itlim = INT_MAX;
+    int itlim = 200;
     double up = -SCIPinfinity(scip);
     double down = -SCIPinfinity(scip);
     unsigned int downvalid;
@@ -110,16 +112,16 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
     double upgain = up - lpobjval;
 
     /* update variable pseudo cost values */
-    if( !downinf && downvalid )
-    {
+    if (!downinf) {
         SCIPupdateVarPseudocost(scip, var, 0.0 - SCIPfrac(scip, val), downgain, 1.0);
-        nSbDown++;
     }
-    if( !upinf && upvalid )
-    {
+    if (!upinf) {
         SCIPupdateVarPseudocost(scip, var, 1.0 - SCIPfrac(scip, val), upgain, 1.0);
-        nSbUp++;
     }
+
+    auto const solval = SCIPvarGetLPSol(var);
+    auto const floor_distance = SCIPfeasFrac(scip, solval);
+    auto const ceil_distance = 1. - floor_distance;
 
     return {
         downgain,
@@ -129,7 +131,7 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
 
 std::vector<double> DynamicFeaturesObs::getNSb() {
     return {
-        nSbUp,
-        nSbDown,
+        SCIPgetVarPseudocostCountCurrentRun(scip, var, SCIP_BRANCHDIR_UPWARDS),
+        SCIPgetVarPseudocostCountCurrentRun(scip, var, SCIP_BRANCHDIR_DOWNWARDS),
     };
 }

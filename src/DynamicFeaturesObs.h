@@ -12,9 +12,6 @@
 #include "Obs.h"
 
 class DynamicFeaturesObs: public Obs{
-    double nSbUp {0};
-    double nSbDown {0};
-
     bool isRowActive(SCIP_ROW* row) const;
 
     /**
