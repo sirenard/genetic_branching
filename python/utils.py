@@ -12,6 +12,7 @@ import tempfile
 from multiprocessing import Pool
 import ecole
 import numpy as np
+import pyscipopt
 from boundml import solvers
 from deap import algorithms
 from deap import base
@@ -34,7 +35,7 @@ def solve(path, individual, feature_observer, scip_params):
     toolbox = create_tool_box()
     func = toolbox.compile(expr=individual)
     # solver = solvers.EcoleSolver(FunctorObserver(func, MyObserver()), scip_params=scip_params)
-    solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params)
+    solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params, config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
     return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
 
@@ -112,8 +113,11 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
     pset = gp.PrimitiveSet("MAIN", len(observer))
     # pset = gp.PrimitiveSet("MAIN", 72)
-    def add_operator(operator, arity, name):
-        f = lambda *args: LazyProxy(lambda: operator(*args))
+    def add_operator(operator, arity, name, lazy=True):
+        if lazy:
+            f = lambda *args: LazyProxy(lambda: np.float64(operator(*args)))
+        else:
+            f = lambda *args: np.float64(operator(*[np.float64(arg) for arg in args]))
         pset.addPrimitive(f, arity, name)
 
     add_operator(operator.add, 2, "add")
@@ -124,10 +128,10 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
     add_operator(operator.gt, 2, "gt")
     add_operator(operator.neg, 1, "neg")
     add_operator(if_then_else, 3, "if_then_else")
-    add_operator(min, 2, "min")
-    add_operator(max, 2, "max")
-    add_operator(math.log2, 1, "log2")
-    add_operator(round, 1, "round")
+    add_operator(min, 2, "min", lazy=False)
+    add_operator(max, 2, "max", lazy=False)
+    # add_operator(math.log2, 1, "log2")
+    add_operator(np.round, 1, "round", lazy=False)
 
     for i in range(-3, 5):
         pset.addTerminal(2**i)
@@ -161,26 +165,30 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
 
 def solve_rb(path, scip_params={}):
-    solver = solvers.ClassicSolver("relpscost", scip_params)
+    solver = solvers.ClassicSolver("relpscost", scip_params, config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
     return solver["time"]
 
 def get_known_individuals(pset):
-    relpscost = creator.Individual(gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG30,ARG31),8), mul(ARG28,ARG29), mul(ARG25,arg26))", pset))
+    # relpscost = creator.Individual(gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG30,ARG31),8), mul(ARG28,ARG29), mul(ARG25,arg26))", pset))
     return []
 
 def train(observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
     instances_path = []
     files = []
 
+    print("Presolving.....")
     for i,instance in enumerate(instances):
         prob_file = tempfile.NamedTemporaryFile(suffix=".lp")
         model = instance.as_pyscipopt()
-        model.writeProblem(prob_file.name)
+        model.presolve()
+
+        model.writeProblem(prob_file.name, trans=True)
 
         instances_path.append(prob_file.name)
         files.append(prob_file)
 
+    print("Solving default...")
     with Pool() as pool:
         times_baseline = pool.map(solve_rb, instances_path)
 
