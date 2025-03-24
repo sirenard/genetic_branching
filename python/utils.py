@@ -113,7 +113,7 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
     pset = gp.PrimitiveSet("MAIN", len(observer))
     # pset = gp.PrimitiveSet("MAIN", 72)
-    def add_operator(operator, arity, name, lazy=True):
+    def add_operator(operator, arity, name, lazy=False):
         if lazy:
             f = lambda *args: LazyProxy(lambda: np.float64(operator(*args)))
         else:
@@ -127,11 +127,11 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
     add_operator(operator.lt, 2, "lt")
     add_operator(operator.gt, 2, "gt")
     add_operator(operator.neg, 1, "neg")
-    add_operator(if_then_else, 3, "if_then_else")
-    add_operator(min, 2, "min", lazy=False)
-    add_operator(max, 2, "max", lazy=False)
+    add_operator(if_then_else, 3, "if_then_else", lazy=True)
+    add_operator(min, 2, "min")
+    add_operator(max, 2, "max")
     # add_operator(math.log2, 1, "log2")
-    add_operator(np.round, 1, "round", lazy=False)
+    add_operator(np.round, 1, "round")
 
     for i in range(-3, 5):
         pset.addTerminal(2**i)
