@@ -170,8 +170,18 @@ def solve_rb(path, scip_params={}):
     return solver["time"]
 
 def get_known_individuals(pset):
-    # relpscost = creator.Individual(gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG30,ARG31),8), mul(ARG28,ARG29), mul(ARG25,arg26))", pset))
-    return []
+    relpscost1 = creator.Individual(
+        gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG31,ARG32),6), ARG30, ARG23)", pset))
+    relpscost2 = creator.Individual(
+        gp.PrimitiveTree.from_string("if_then_else(lt(min(ARG31,ARG32),4), ARG30, ARG23)", pset))
+    pscost = creator.Individual(
+        gp.PrimitiveTree.from_string("ARG23", pset))
+    hybrid1 = creator.Individual(
+        gp.PrimitiveTree.from_string("if_then_else(lt(ARG18,6), ARG30, ARG23)", pset))
+    hybrid2 = creator.Individual(
+            gp.PrimitiveTree.from_string("if_then_else(lt(ARG18,4), ARG30, ARG23)", pset))
+
+    return [relpscost1, relpscost2, pscost, hybrid1, hybrid2]
 
 def train(observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
     instances_path = []
