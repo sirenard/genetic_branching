@@ -41,7 +41,7 @@ class DynamicFeaturesObs: public Obs{
 
     void compute(int index) override;
 public:
-    static const int size = 13;
+    static const int size = 14;
     explicit DynamicFeaturesObs(long scipl);
 
 };

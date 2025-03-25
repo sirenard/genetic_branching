@@ -3,6 +3,7 @@
 //
 
 #include "DynamicFeaturesObs.h"
+#include "scip/branch.h"
 
 #include <iostream>
 
@@ -26,11 +27,11 @@ void DynamicFeaturesObs::compute(int index) {
     } else if (index < 9) {
         start = 5;
         tmp = getInfeasibilityStatistics();
-    } else if (index < 11) {
+    } else if (index < 12) {
         start = 9;
         tmp = getStrongBranchingScore();
-    } else if (index < 13) {
-        start = 11;
+    } else if (index < 14) {
+        start = 12;
         tmp = getNSb();
     }
 
@@ -53,13 +54,17 @@ std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
     auto const wpd_approx = std::max(weighted_pseudocost_down, epsilon);
     auto const weighted_pseudocost_ratio = safe_div<double>(std::min(wpu_approx, wpd_approx),
                                                             std::max(wpu_approx, wpd_approx));
+    double gain[2] = {weighted_pseudocost_down, weighted_pseudocost_up};
 
     return {
         std::min(floor_distance, ceil_distance),
         ceil_distance,
-        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS),
-        SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS),
-        weighted_pseudocost_ratio,
+        weighted_pseudocost_up,
+        weighted_pseudocost_down,
+        // SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS),
+        // SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS),
+        //weighted_pseudocost_ratio,
+        SCIPgetBranchScoreMultiple(scip, var, 2, gain),
     };
 }
 
@@ -77,7 +82,17 @@ std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
 }
 
 std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
-    int itlim = 200;
+    if ( SCIPgetNLPBranchCands(scip) == 1 ) {
+        auto tmp = getPseudoCosts();
+        return {
+            tmp[2],
+            tmp[3],
+            tmp[4],
+        };
+    }
+
+
+    int itlim = INT_MAX;
     double up = -SCIPinfinity(scip);
     double down = -SCIPinfinity(scip);
     unsigned int downvalid;
@@ -89,6 +104,8 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
     unsigned int lperror;
     auto lpobjval = SCIPgetLPObjval(scip);
     auto val = SCIPvarGetLPSol(var);
+
+    SCIPstartStrongbranch(scip, 0);
 
     SCIPgetVarStrongbranchFrac(
         scip,
@@ -112,20 +129,21 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
     double upgain = up - lpobjval;
 
     /* update variable pseudo cost values */
-    if (!downinf) {
+    if ( !downinf && downvalid ) {
         SCIPupdateVarPseudocost(scip, var, 0.0 - SCIPfrac(scip, val), downgain, 1.0);
     }
-    if (!upinf) {
+    if ( !upinf && upvalid ) {
         SCIPupdateVarPseudocost(scip, var, 1.0 - SCIPfrac(scip, val), upgain, 1.0);
     }
 
-    auto const solval = SCIPvarGetLPSol(var);
-    auto const floor_distance = SCIPfeasFrac(scip, solval);
-    auto const ceil_distance = 1. - floor_distance;
+    SCIPendStrongbranch(scip);
+
+    double gain[2] = {downgain, upgain};
 
     return {
         downgain,
         upgain,
+        SCIPgetBranchScoreMultiple(scip, var, 2, gain),
     };
 }
 
