@@ -111,30 +111,41 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
     if observer is None:
         return create_tool_box.toolbox
 
-    pset = gp.PrimitiveSet("MAIN", len(observer))
+    pset = gp.PrimitiveSetTyped("MAIN", [np.float64]*len(observer), np.float64)
     # pset = gp.PrimitiveSet("MAIN", 72)
-    def add_operator(operator, arity, name, lazy=False):
+    def add_operator(operator, args_type, type, name, lazy=False):
         if lazy:
             f = lambda *args: LazyProxy(lambda: np.float64(operator(*args)))
         else:
             f = lambda *args: np.float64(operator(*[np.float64(arg) for arg in args]))
-        pset.addPrimitive(f, arity, name)
+        pset.addPrimitive(f, args_type, type, name)
 
-    add_operator(operator.add, 2, "add")
-    add_operator(operator.sub, 2, "sub")
-    add_operator(operator.mul, 2, "mul")
-    add_operator(protectedDiv, 2, "div")
-    add_operator(operator.lt, 2, "lt")
-    add_operator(operator.gt, 2, "gt")
-    add_operator(operator.neg, 1, "neg")
-    add_operator(if_then_else, 3, "if_then_else", lazy=True)
-    add_operator(min, 2, "min")
-    add_operator(max, 2, "max")
+    add_operator(operator.add, [np.float64, np.float64], np.float64, "add")
+    add_operator(operator.sub, [np.float64, np.float64], np.float64, "sub")
+    add_operator(operator.mul, [np.float64, np.float64], np.float64, "mul")
+    add_operator(protectedDiv, [np.float64, np.float64], np.float64, "div")
+    add_operator(lambda x,y: x and y, [bool, bool], bool, "and")
+    add_operator(lambda x,y: x or y, [bool, bool], bool, "or")
+    add_operator(lambda x: not x, [bool], bool, "not")
+    add_operator(operator.lt, [np.float64, np.float64], bool, "lt")
+    add_operator(operator.gt, [np.float64, np.float64], bool, "gt")
+    add_operator(operator.neg, [np.float64], np.float64, "neg")
+    add_operator(if_then_else, [bool, np.float64, np.float64], np.float64, "if_then_else", lazy=True)
+    add_operator(min, [np.float64, np.float64], np.float64, "min")
+    add_operator(max, [np.float64, np.float64], np.float64, "max")
     # add_operator(math.log2, 1, "log2")
-    add_operator(np.round, 1, "round")
+    add_operator(np.round, [np.float64], np.float64, "round")
 
-    for i in range(-3, 5):
-        pset.addTerminal(2**i)
+    pset.addTerminal(2, np.float64)
+    pset.addTerminal(4, np.float64)
+    pset.addTerminal(6, np.float64)
+    pset.addTerminal(8, np.float64)
+    pset.addTerminal(128, np.float64)
+    pset.addTerminal(256, np.float64)
+    pset.addTerminal(512, np.float64)
+
+    pset.addTerminal(True, bool)
+    pset.addTerminal(False, bool)
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMin)
