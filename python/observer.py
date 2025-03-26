@@ -28,7 +28,7 @@ class MyObserver(Observer):
 
         prob_indexes = sorted([var.getCol().getLPPos() for var in candidates])
 
-        p = model.get_scip_ptr()
+        p = m.to_ptr(False)
         if self.first:
             self.tree_observation = ObservationWrapper(my_module.TreeFeaturesObs, p)
             self.first = False
