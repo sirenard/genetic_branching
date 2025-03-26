@@ -92,9 +92,9 @@ def mapp(f, individuals, args):
     return result
 
 def protectedDiv(left, right):
-    try:
+    if right != 0.0:
         return left / right
-    except ZeroDivisionError:
+    else:
         return 1
 
 def if_then_else(cond, then, default):
@@ -124,8 +124,8 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
     add_operator(operator.sub, [np.float64, np.float64], np.float64, "sub")
     add_operator(operator.mul, [np.float64, np.float64], np.float64, "mul")
     add_operator(protectedDiv, [np.float64, np.float64], np.float64, "div")
-    add_operator(lambda x,y: x and y, [bool, bool], bool, "and")
-    add_operator(lambda x,y: x or y, [bool, bool], bool, "or")
+    add_operator(lambda x,y: x and y, [bool, bool], bool, "and_")
+    add_operator(lambda x,y: x or y, [bool, bool], bool, "or_")
     add_operator(lambda x: not x, [bool], bool, "not")
     add_operator(operator.lt, [np.float64, np.float64], bool, "lt")
     add_operator(operator.gt, [np.float64, np.float64], bool, "gt")

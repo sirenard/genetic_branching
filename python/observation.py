@@ -1,5 +1,6 @@
 import ecole
 import my_module
+import numpy as np
 from objproxies import LazyProxy
 
 
@@ -10,7 +11,7 @@ class ObservationWrapper:
 
     def __getitem__(self, i):
         def f():
-            return self.observation[i]
+            return np.float64(self.observation[i])
 
         if self.lazy_access:
             return LazyProxy(f)
