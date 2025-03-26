@@ -2,7 +2,19 @@ import os
 
 import dill as pickle
 from observer import MyObserver
-from utils import create_tool_box
+
+
+def is_float(expr: str):
+    try:
+        float(expr)
+        return True
+    except ValueError:
+        return False
+
+
+def is_bool(expr):
+    return expr.lower() in ["true", "false"]
+
 
 class Generator:
     def __init__(self, formula):
@@ -51,6 +63,9 @@ class Generator:
         if function == "div":
             return f"({args[1]}) == 0 ? 1 : ({args[0]})/({args[1]})"
 
+        if function == "if_then_else":
+            return f"{args[0]} ? {args[1]} : {args[2]}"
+
         if function == "not":
             return f"!({args[0]})"
 
@@ -65,9 +80,14 @@ class Generator:
 
 
     def parse(self, expr: str):
+
         if expr.startswith("ARG"):
             index = expr[3:]
             code = f"features[{index}]"
+        elif is_float(expr):
+            code = expr
+        elif  is_bool(expr):
+            code = expr.lower()
         else:
             function, args = self.extract_functions(expr)
             args = [self.parse(arg) for arg in args]
@@ -75,8 +95,8 @@ class Generator:
 
         return code
 
-    def generate_file(self, name, path):
-        with open("observer_generation/template.cpp", "r") as f:
+    def generate_file(self, name, path, template_path="observer_generation/template.cpp"):
+        with open(template_path, "r") as f:
             content = f.read()
 
         content = content.replace("template_name", name)
@@ -90,6 +110,7 @@ class Generator:
 
 
 if __name__ == "__main__":
+    from utils import create_tool_box
     name = "best_ca4_lazy"
     observer = MyObserver()
     toolbox, pset = create_tool_box(observer)
