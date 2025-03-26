@@ -8,6 +8,9 @@
 #include <vector>
 
 #include <scip/scip.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+namespace py = pybind11;
 
 #include "Obs.h"
 
@@ -42,7 +45,8 @@ class DynamicFeaturesObs: public Obs{
     void compute(int index) override;
 public:
     static const int size = 14;
-    explicit DynamicFeaturesObs(long scipl);
+    explicit DynamicFeaturesObs(SCIP* scip);
+    explicit DynamicFeaturesObs(py::object py_scip);
 
 };
 

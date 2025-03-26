@@ -56,7 +56,7 @@ public:
 
   SCIP_DECL_BRANCHINITSOL(scip_initsol) override {
     tree_features =
-        std::make_unique<TreeFeaturesObs>(reinterpret_cast<long>(scip));
+        std::make_unique<TreeFeaturesObs>(scip);
     return SCIP_OKAY;
   }
 
@@ -79,11 +79,11 @@ public:
       int prob_index = SCIPvarGetProbindex(cand);
       if (!dynamic_features.contains(prob_index)) {
         dynamic_features.insert(std::make_pair(
-            prob_index, DynamicFeaturesObs(reinterpret_cast<long>(scip))));
+            prob_index, DynamicFeaturesObs(scip)));
       }
       if (!static_features.contains(prob_index)) {
         static_features.insert(std::make_pair(
-            prob_index, StaticFeaturesObs(reinterpret_cast<long>(scip))));
+            prob_index, StaticFeaturesObs(scip)));
       }
 
       auto dynamic_feature = dynamic_features.at(prob_index);

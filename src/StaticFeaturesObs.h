@@ -9,18 +9,21 @@
 #include <vector>
 
 #include <scip/scip.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+namespace py = pybind11;
+
 
 #include "ArrayView.h"
 #include "Obs.h"
 #include "statistics.h"
 
-class StaticFeaturesObs: public Obs{
+class StaticFeaturesObs : public Obs {
     /**
      * Get the variable objective's coefficient
      * @return
      */
-    std::vector<double> computeObjCoefficient(){
-
+    std::vector<double> computeObjCoefficient() {
         return {(SCIPvarGetObj(var))};
     }
 
@@ -29,14 +32,14 @@ class StaticFeaturesObs: public Obs{
      * And statistics on positive/negative coefficient (mean, stdev, min, max)
      * @return vector of 9 features
      */
-    std::vector<double> computeNonZeroCoefficientsStatistics(){
+    std::vector<double> computeNonZeroCoefficientsStatistics() {
         auto col = SCIPvarGetCol(var);
 
         int count = SCIPcolGetNLPNonz(col);
         auto data = ArrayView(SCIPcolGetVals(col), count);
 
-        auto positiveStats = statistics<ArrayView<double>, double>(data, [](double val){return val > 0;;});
-        auto negativeStats = statistics<ArrayView<double>, double>(data, [](double val){return val < 0;});
+        auto positiveStats = statistics<ArrayView<double>, double>(data, [](double val) { return val > 0;; });
+        auto negativeStats = statistics<ArrayView<double>, double>(data, [](double val) { return val < 0; });
 
         return {
             static_cast<double>(count),
@@ -66,7 +69,7 @@ class StaticFeaturesObs: public Obs{
         auto const n_rows = SCIPcolGetNNonz(col);
         auto rows = SCIPcolGetRows(col);
 
-        for (int i=0; i<n_rows; i++) {
+        for (int i = 0; i < n_rows; i++) {
             auto row = rows[i];
             degrees.push_back(SCIProwGetNNonz(row));
         }
@@ -96,19 +99,27 @@ class StaticFeaturesObs: public Obs{
         }
 
 
-        for (int i=0; i<tmp.size(); i++) {
-            features[i+start] = tmp[i];
-            computed[i+start] = true;
+        for (int i = 0; i < tmp.size(); i++) {
+            features[i + start] = tmp[i];
+            computed[i + start] = true;
         }
         // std::copy_backward(tmp.begin(), tmp.end(), features.begin()+start);
         // std::fill(computed.begin() + start, computed.begin() + start + tmp.size(), true);
     }
+
 public:
     static const int size = 14;
-    explicit StaticFeaturesObs(long scipl): Obs(scipl, size) {
+
+    explicit StaticFeaturesObs(SCIP *scip): Obs(scip, size) {
+    }
+    explicit StaticFeaturesObs(py::object py_scip) : StaticFeaturesObs(
+        static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
+    ) {
+        if (!scip) {
+            throw py::error_already_set();
+        }
     }
 };
-
 
 
 #endif //STATICFEATURESOBS_H

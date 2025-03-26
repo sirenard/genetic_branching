@@ -8,7 +8,7 @@
 
 #include "utils.h"
 
-Obs::Obs(long scipl, int size): features(size), computed(size, false), scip(reinterpret_cast<SCIP *>(scipl)) {}
+Obs::Obs(SCIP* scip, int size): features(size), computed(size, false), scip(scip) {}
 
 double Obs::operator[](int index) {
     if (!computed[index]) {

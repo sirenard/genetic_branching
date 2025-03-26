@@ -5,7 +5,15 @@
 #include "TreeFeaturesObs.h"
 #include <scip/event_estim.h>
 
-TreeFeaturesObs::TreeFeaturesObs(long scipl): Obs(scipl, size){}
+TreeFeaturesObs::TreeFeaturesObs(SCIP* scip): Obs(scip, size){}
+
+TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(
+        static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
+    ) {
+    if (!scip) {
+        throw py::error_already_set();
+    }
+}
 
 void TreeFeaturesObs::compute(int index) {
     double value;

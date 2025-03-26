@@ -16,7 +16,15 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
     return SCIProwIsInLP(row) && (SCIPisEQ(scip, activity, rhs) || SCIPisEQ(scip, activity, lhs));
 }
 
-DynamicFeaturesObs::DynamicFeaturesObs(long scipl): Obs(scipl, size) {
+DynamicFeaturesObs::DynamicFeaturesObs(SCIP* scip): Obs(scip, size) {
+}
+
+DynamicFeaturesObs::DynamicFeaturesObs(py::object py_scip) : DynamicFeaturesObs(
+        static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
+    ) {
+    if (!scip) {
+        throw py::error_already_set();
+    }
 }
 
 void DynamicFeaturesObs::compute(int index) {

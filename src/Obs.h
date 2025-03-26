@@ -16,7 +16,7 @@ protected:
     SCIP* scip;
     SCIP_Var* var {};
 public:
-    Obs(long scipl, int size);
+    Obs(SCIP* scip, int size);
 
     double operator[](int index);
     void reset();
