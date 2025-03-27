@@ -73,35 +73,37 @@ public:
 
     tree_features->reset();
 
-    for (int i = 0; i < nlpcands; i++) {
-      auto cand = lpcands[i];
+    if(nlpcands > 1){
+        for (int i = 0; i < nlpcands; i++) {
+          auto cand = lpcands[i];
 
-      int prob_index = SCIPvarGetProbindex(cand);
-      if (!dynamic_features.contains(prob_index)) {
-        dynamic_features.insert(std::make_pair(
-            prob_index, DynamicFeaturesObs(scip)));
-      }
-      if (!static_features.contains(prob_index)) {
-        static_features.insert(std::make_pair(
-            prob_index, StaticFeaturesObs(scip)));
-      }
+          int prob_index = SCIPvarGetProbindex(cand);
+          if (!dynamic_features.contains(prob_index)) {
+            dynamic_features.insert(std::make_pair(
+                prob_index, DynamicFeaturesObs(scip)));
+          }
+          if (!static_features.contains(prob_index)) {
+            static_features.insert(std::make_pair(
+                prob_index, StaticFeaturesObs(scip)));
+          }
 
-      auto dynamic_feature = dynamic_features.at(prob_index);
-      auto static_feature = static_features.at(prob_index);
+          auto dynamic_feature = dynamic_features.at(prob_index);
+          auto static_feature = static_features.at(prob_index);
 
-      dynamic_feature.reset();
+          dynamic_feature.reset();
 
-      dynamic_feature.setVar(prob_index);
-      static_feature.setVar(prob_index);
+          dynamic_feature.setVar(prob_index);
+          static_feature.setVar(prob_index);
 
-      FeaturesWrapper features(static_feature, *tree_features,
-                               dynamic_feature);
+          FeaturesWrapper features(static_feature, *tree_features,
+                                   dynamic_feature);
 
-      SCIP_Real score = FORMULA;
-      if (score > bestScore) {
-        bestScore = score;
-        bestcand = i;
-      }
+          SCIP_Real score = FORMULA;
+          if (score > bestScore) {
+            bestScore = score;
+            bestcand = i;
+          }
+        }
     }
 
     SCIP_CALL(SCIPbranchVar(scip, lpcands[bestcand], NULL, NULL, NULL));
