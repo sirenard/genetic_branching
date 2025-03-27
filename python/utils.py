@@ -20,6 +20,7 @@ from deap import creator
 from deap import tools
 from deap import gp
 import deap
+from mpipool import MPIExecutor
 from objproxies import LazyProxy
 
 from functor_observer import FunctorObserver
@@ -39,19 +40,16 @@ def solve(path, individual, feature_observer, scip_params):
     solver.solve(path)
     return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
 
-def evalSymbReg(individual, pool: multiprocessing.Pool, instances_path, baseline_average_time, *args):
-    async_results = [pool.apply_async(solve, args=(p, individual, *args)) for p in instances_path]
+def evalSymbReg(individual, pool: MPIExecutor, instances_path, baseline_average_time, *args):
+    async_results = [pool.submit(solve, p, individual, *args) for p in instances_path]
     def get_res():
         # score = 0
         estimate_times = []
-        for estimate_nnodes, nnodes, time in [ar.get() for ar in async_results]:
+        for estimate_nnodes, nnodes, time in [ar.result() for ar in async_results]:
             estimate_time = estimate_nnodes * (time/nnodes)
             if estimate_time < time:
                 estimate_time = 10*time
             estimate_times.append(estimate_time)
-
-            # print(nnodes, estimate_nnodes, time, estimate_time)
-            # score += max(estimate_time, time)
 
         return shifted_geometric_mean(estimate_times, 1)/baseline_average_time, # * (1 + individual.height/100),
 
@@ -68,10 +66,11 @@ def evalSymbReg(individual, pool: multiprocessing.Pool, instances_path, baseline
 #     return sum(nnodes) / len(nnodes) + individual.height ** 0.5 / 100,
 
 
-def mapp(f, individuals, args):
+def mapp( f, individuals, args):
     args = args[:]
     callbacks = []
     instances, times_baseline, n = args.pop(0)
+    pool: MPIExecutor = args.pop(0)
 
     if n is not None:
         indexes = random.choices(range(len(instances)), k=n)
@@ -80,12 +79,9 @@ def mapp(f, individuals, args):
 
     baseline_average_time = shifted_geometric_mean(times_baseline, 1)
 
-    with Pool() as pool:
-        for individual in individuals:
-            callbacks.append(f(individual, pool, instances, baseline_average_time, *args))
+    for individual in individuals:
+        callbacks.append(f(individual, pool, instances, baseline_average_time, *args))
 
-        pool.close()
-        pool.join()
 
     result = [callback() for callback in callbacks]
 
@@ -104,7 +100,7 @@ def if_then_else(cond, then, default):
         return default
 
 
-def create_tool_box(observer = None, instances_paths = None, scip_params = None, n_instance=None, times_baseline = None):
+def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths = None, scip_params = None, n_instance=None, times_baseline = None):
     if not hasattr(create_tool_box, "toolbox"):
         create_tool_box.toolbox = None
 
@@ -168,7 +164,7 @@ def create_tool_box(observer = None, instances_paths = None, scip_params = None,
 
     assert (instances_paths is None and scip_params is None) or (instances_paths is not None and scip_params is not None), "If one argument is provided, the 3 must be set"
     if instances_paths is not None:
-        args = [(instances_paths, times_baseline, n_instance), observer, scip_params]
+        args = [(instances_paths, times_baseline, n_instance), pool, observer, scip_params]
         toolbox.register("map", mapp, args=args)
 
     create_tool_box.toolbox = toolbox
@@ -194,7 +190,7 @@ def get_known_individuals(pset):
 
     return [relpscost1, relpscost2, pscost, hybrid1, hybrid2]
 
-def train(observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
+def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
     instances_path = []
     files = []
 
@@ -210,12 +206,12 @@ def train(observer, instances, pop_size, n_generations, best_individual_path="be
         files.append(prob_file)
 
     print("Solving default...")
-    with Pool() as pool:
-        times_baseline = pool.map(solve_rb, instances_path)
+    with Pool() as mp_pool:
+        times_baseline = mp_pool.map(solve_rb, instances_path)
 
     print("Starting evolution...")
 
-    toolbox, pset = create_tool_box(observer, instances_path, scip_params, n_instances, times_baseline)
+    toolbox, pset = create_tool_box(pool, observer, instances_path, scip_params, n_instances, times_baseline)
 
     known_individuals = get_known_individuals(pset)
     pop = toolbox.population(n=pop_size - len(known_individuals))
