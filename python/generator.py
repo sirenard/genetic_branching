@@ -85,7 +85,7 @@ class Generator:
             index = expr[3:]
             code = f"features[{index}]"
         elif is_float(expr):
-            code = expr
+            code = f"static_cast<double>({expr})"
         elif  is_bool(expr):
             code = expr.lower()
         else:

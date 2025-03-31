@@ -1,5 +1,7 @@
 #include <iostream>
 #include <map>
+#include <algorithm>
+
 #include <objscip/objbranchrule.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
