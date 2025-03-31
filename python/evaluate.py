@@ -2,18 +2,11 @@ import pickle
 
 import ecole
 from boundml.evaluation_tools import evaluate_solvers
-from boundml.solvers import ClassicSolver, EcoleSolver
+from boundml.solvers import ClassicSolver
 
-from functor_observer import FunctorObserver
-from observer import MyObserver
-from train import toolbox
-
+from ClassicSolverCustomBranching import ClassicSolverCustomBranching
 
 n_instances = 15
-
-individial = pickle.load(open("best_gen_khalil", "rb"))
-print(individial)
-f = toolbox.compile(expr=individial)
 
 if __name__ == '__main__':
     instances = ecole.instance.CombinatorialAuctionGenerator(n_items=100, n_bids=500)
@@ -25,8 +18,7 @@ if __name__ == '__main__':
 
     solvers = [
         ClassicSolver("relpscost", scip_params),
-        ClassicSolver("pscost", scip_params),
-        EcoleSolver(FunctorObserver(f, MyObserver()), scip_params),
+        ClassicSolverCustomBranching("best_ca", scip_params),
     ]
 
     metrics = ["nnodes", "time", "gap"]
