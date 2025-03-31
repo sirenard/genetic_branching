@@ -14,8 +14,7 @@ export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib
 Install pip dependencies
 ```shell
 pip install git+https://github.com/sirenard/boundml
-pip install deap
-pip install objproxies
+pip install deap objproxies mpipool
 ```
 
 Build c++
