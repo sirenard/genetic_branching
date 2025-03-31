@@ -13,6 +13,10 @@
 
 #define FORMULA 0
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define AT __FILE__ ":" TOSTRING(__LINE__)
+
 namespace py = pybind11;
 
 class FeaturesWrapper {
@@ -134,7 +138,13 @@ void add_branching(py::object py_scip) {
   SCIPincludeObjBranchrule(scip, new template_name(scip), TRUE);
 }
 
+std::string to_str(){
+    return TOSTRING(FORMULA);
+}
+
 PYBIND11_MODULE(template_name, m) {
   m.def("add_branching", &add_branching,
         "Adds custom branching rule to SCIP");
+  m.def("to_str", &to_str,
+        "Get the string formula");
 }

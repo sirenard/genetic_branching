@@ -111,9 +111,9 @@ class Generator:
 
 if __name__ == "__main__":
     from utils import create_tool_box
-    name = "best_ca4_lazy"
+    name = "best_ca2"
     observer = MyObserver()
-    toolbox, pset = create_tool_box(observer)
+    toolbox, pset = create_tool_box(observer=observer)
     individial = pickle.load(open(f"individuals/{name}", "rb"))
     print(individial)
     gen = Generator(str(individial))
