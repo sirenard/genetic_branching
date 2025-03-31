@@ -206,8 +206,8 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
         files.append(prob_file)
 
     print("Solving default...")
-    with Pool() as mp_pool:
-        times_baseline = mp_pool.map(solve_rb, instances_path)
+    times_baseline = list(pool.map(solve_rb, instances_path))
+    print(times_baseline)
 
     print("Starting evolution...")
 
