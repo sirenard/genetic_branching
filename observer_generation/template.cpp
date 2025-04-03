@@ -13,9 +13,7 @@
 
 #define FORMULA 0
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-#define AT __FILE__ ":" TOSTRING(__LINE__)
+#define FORMULA_STR ""
 
 namespace py = pybind11;
 
@@ -139,7 +137,7 @@ void add_branching(py::object py_scip) {
 }
 
 std::string to_str(){
-    return TOSTRING(FORMULA);
+    return FORMULA_STR;
 }
 
 PYBIND11_MODULE(template_name, m) {

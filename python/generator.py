@@ -104,6 +104,8 @@ class Generator:
         code = self.parse(self.formula)
         content = content.replace("#define FORMULA 0", f"#define FORMULA {code}")
 
+        content = content.replace("#define FORMULA_STR \"\"", f"#define FORMULA_STR \"{self.formula}\"")
+
         p = os.path.join(path, f"{name}.cpp")
         with open(p, "w") as f:
             f.write(content)
@@ -111,7 +113,7 @@ class Generator:
 
 if __name__ == "__main__":
     from utils import create_tool_box
-    name = "best_ca2"
+    name = "best_ca"
     observer = MyObserver()
     toolbox, pset = create_tool_box(observer=observer)
     individial = pickle.load(open(f"individuals/{name}", "rb"))
