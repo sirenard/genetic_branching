@@ -197,9 +197,14 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
     print("Presolving.....")
     for i,instance in enumerate(instances):
         prob_file = tempfile.NamedTemporaryFile(suffix=".lp")
-        model = instance.as_pyscipopt()
-        model.presolve()
+        if type(instance) is str:
+            model = pyscipopt.Model()
+            model.setParam("display/verblevel", 0)
+            model.readProblem(instance)
+        else:
+            model = instance.as_pyscipopt()
 
+        model.presolve()
         model.writeProblem(prob_file.name, trans=True)
 
         instances_path.append(prob_file.name)
