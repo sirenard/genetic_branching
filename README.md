@@ -4,7 +4,7 @@
 
 Configure environment
 ```shell
-conda install pip scip==9.1.0 pybind11
+conda install pip scip==9.1.0 pybind11 fmt
 export CMAKE_PREFIX_PATH="${CONDA_PREFIX}" 
 export CPLUS_INCLUDE_PATH="${CONDA_PREFIX}/include/"
 export LIBRARY_PATH=${CONDA_PREFIX}/lib
@@ -13,7 +13,7 @@ export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib
 
 Install pip dependencies
 ```shell
-pip install git+https://github.com/sirenard/boundml
+pip install boundml
 pip install deap objproxies mpipool
 ```
 
