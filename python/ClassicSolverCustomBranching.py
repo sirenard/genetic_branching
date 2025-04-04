@@ -14,5 +14,14 @@ class ClassicSolverCustomBranching(ClassicSolver):
             scip_params,
             config_function=lambda model: self.module.add_branching(model.to_ptr(False))
         )
+
+        self.state = (branching_rule_name, scip_params)
+
     def get_expression(self):
         return self.module.to_str()
+
+    def __getstate__(self):
+        return self.state
+
+    def __setstate__(self, state):
+        self.__init__(*state)
