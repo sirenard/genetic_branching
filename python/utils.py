@@ -35,12 +35,11 @@ def shifted_geometric_mean(values, shift=1.0):
 def solve(path, individual, feature_observer, scip_params):
     toolbox = create_tool_box()
     func = toolbox.compile(expr=individual)
-    # solver = solvers.EcoleSolver(FunctorObserver(func, MyObserver()), scip_params=scip_params)
     solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params, config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
     return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
 
-def evalSymbReg(individual, pool: MPIExecutor, instances_path, baseline_average_time, *args):
+def evalSymbReg(individual, pool: MPIExecutor, instances_path, *args):
     async_results = [pool.submit(solve, p, individual, *args) for p in instances_path]
     def get_res():
         # score = 0
@@ -51,7 +50,7 @@ def evalSymbReg(individual, pool: MPIExecutor, instances_path, baseline_average_
                 estimate_time = 10*time
             estimate_times.append(estimate_time)
 
-        return shifted_geometric_mean(estimate_times, 1)/baseline_average_time, # * (1 + individual.height/100),
+        return shifted_geometric_mean(estimate_times, 1), # * (1 + individual.height/100),
 
     return get_res
 
@@ -69,19 +68,11 @@ def evalSymbReg(individual, pool: MPIExecutor, instances_path, baseline_average_
 def mapp( f, individuals, args):
     args = args[:]
     callbacks = []
-    instances, times_baseline, n = args.pop(0)
+    instances = args.pop(0)
     pool: MPIExecutor = args.pop(0)
 
-    if n is not None:
-        indexes = random.choices(range(len(instances)), k=n)
-        instances = [instances[i] for i in indexes]
-        times_baseline = [times_baseline[i] for i in indexes]
-
-    baseline_average_time = shifted_geometric_mean(times_baseline, 1)
-
     for individual in individuals:
-        callbacks.append(f(individual, pool, instances, baseline_average_time, *args))
-
+        callbacks.append(f(individual, pool, instances, *args))
 
     result = [callback() for callback in callbacks]
 
@@ -100,7 +91,7 @@ def if_then_else(cond, then, default):
         return default
 
 
-def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths = None, scip_params = None, n_instance=None, times_baseline = None):
+def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths = None, scip_params = None):
     if not hasattr(create_tool_box, "toolbox"):
         create_tool_box.toolbox = None
 
@@ -164,17 +155,11 @@ def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths =
 
     assert (instances_paths is None and scip_params is None) or (instances_paths is not None and scip_params is not None), "If one argument is provided, the 3 must be set"
     if instances_paths is not None:
-        args = [(instances_paths, times_baseline, n_instance), pool, observer, scip_params]
+        args = [instances_paths, pool, observer, scip_params]
         toolbox.register("map", mapp, args=args)
 
     create_tool_box.toolbox = toolbox
     return toolbox, pset
-
-
-def solve_rb(path, scip_params={}):
-    solver = solvers.ClassicSolver("relpscost", scip_params, config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
-    solver.solve(path)
-    return solver["time"]
 
 def get_known_individuals(pset):
     relpscost1 = creator.Individual(
@@ -190,7 +175,7 @@ def get_known_individuals(pset):
 
     return [relpscost1, relpscost2, pscost, hybrid1, hybrid2]
 
-def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}, n_instances=None):
+def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}):
     instances_path = []
     files = []
 
@@ -210,13 +195,9 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
         instances_path.append(prob_file.name)
         files.append(prob_file)
 
-    print("Solving default...")
-    times_baseline = list(pool.map(solve_rb, instances_path))
-    print(times_baseline)
-
     print("Starting evolution...")
 
-    toolbox, pset = create_tool_box(pool, observer, instances_path, scip_params, n_instances, times_baseline)
+    toolbox, pset = create_tool_box(pool, observer, instances_path, scip_params)
 
     known_individuals = get_known_individuals(pset)
     pop = toolbox.population(n=pop_size - len(known_individuals))
