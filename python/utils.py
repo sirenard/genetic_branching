@@ -1,30 +1,18 @@
-import math
-import multiprocessing
 import operator
-import random
-from os import times
-
-import numpy as np
-
-
-import dill as pickle
 import tempfile
-from multiprocessing import Pool
-import ecole
+
 import numpy as np
 import pyscipopt
 from boundml import solvers
-from deap import algorithms
 from deap import base
 from deap import creator
-from deap import tools
 from deap import gp
-import deap
+from deap import tools
 from mpipool import MPIExecutor
 from objproxies import LazyProxy
 
+import ea
 from functor_observer import FunctorObserver
-
 
 
 def shifted_geometric_mean(values, shift=1.0):
@@ -32,40 +20,33 @@ def shifted_geometric_mean(values, shift=1.0):
     geom_mean = np.exp(np.mean(np.log(values + shift))) - shift
     return geom_mean
 
+
 def solve(path, individual, feature_observer, scip_params):
     toolbox = create_tool_box()
     func = toolbox.compile(expr=individual)
-    solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params, config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
+    solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params,
+                                 config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
     return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
 
+
 def evalSymbReg(individual, pool: MPIExecutor, instances_path, *args):
     async_results = [pool.submit(solve, p, individual, *args) for p in instances_path]
+
     def get_res():
-        # score = 0
         estimate_times = []
         for estimate_nnodes, nnodes, time in [ar.result() for ar in async_results]:
-            estimate_time = estimate_nnodes * (time/nnodes)
+            estimate_time = estimate_nnodes * (time / nnodes)
             if estimate_time < time:
-                estimate_time = 10*time
+                estimate_time = 10 * time
             estimate_times.append(estimate_time)
 
-        return shifted_geometric_mean(estimate_times, 1), # * (1 + individual.height/100),
+        return shifted_geometric_mean(estimate_times, 1),
 
     return get_res
 
-# def evalSymbRegSingleCore(individual):
-#     nnodes = []
-#     for p in instances_path:
-#         nnodes.append(solve(p, individual))
-#
-#     for i in range(len(nnodes)):
-#         nnodes[i] /= baseline_node[i]
-#
-#     return sum(nnodes) / len(nnodes) + individual.height ** 0.5 / 100,
 
-
-def mapp( f, individuals, args):
+def mapp(f, individuals, args):
     args = args[:]
     callbacks = []
     instances = args.pop(0)
@@ -78,11 +59,13 @@ def mapp( f, individuals, args):
 
     return result
 
+
 def protectedDiv(left, right):
     if right != 0.0:
         return left / right
     else:
         return 1
+
 
 def if_then_else(cond, then, default):
     if cond:
@@ -91,14 +74,15 @@ def if_then_else(cond, then, default):
         return default
 
 
-def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths = None, scip_params = None):
+def create_tool_box(pool: MPIExecutor = None, observer=None, instances_paths=None, scip_params=None):
     if not hasattr(create_tool_box, "toolbox"):
         create_tool_box.toolbox = None
 
     if observer is None:
         return create_tool_box.toolbox
 
-    pset = gp.PrimitiveSetTyped("MAIN", [np.float64]*len(observer), np.float64)
+    pset = gp.PrimitiveSetTyped("MAIN", [np.float64] * len(observer), np.float64)
+
     # pset = gp.PrimitiveSet("MAIN", 72)
     def add_operator(operator, args_type, type, name, lazy=False):
         if lazy:
@@ -111,8 +95,8 @@ def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths =
     add_operator(operator.sub, [np.float64, np.float64], np.float64, "sub")
     add_operator(operator.mul, [np.float64, np.float64], np.float64, "mul")
     add_operator(protectedDiv, [np.float64, np.float64], np.float64, "div")
-    add_operator(lambda x,y: x and y, [bool, bool], bool, "and_")
-    add_operator(lambda x,y: x or y, [bool, bool], bool, "or_")
+    add_operator(lambda x, y: x and y, [bool, bool], bool, "and_")
+    add_operator(lambda x, y: x or y, [bool, bool], bool, "or_")
     add_operator(lambda x: not x, [bool], bool, "not")
     add_operator(operator.lt, [np.float64, np.float64], bool, "lt")
     add_operator(operator.gt, [np.float64, np.float64], bool, "gt")
@@ -120,7 +104,6 @@ def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths =
     add_operator(if_then_else, [bool, np.float64, np.float64], np.float64, "if_then_else", lazy=True)
     add_operator(min, [np.float64, np.float64], np.float64, "min")
     add_operator(max, [np.float64, np.float64], np.float64, "max")
-    # add_operator(math.log2, 1, "log2")
     add_operator(np.round, [np.float64], np.float64, "round")
 
     pset.addTerminal(2, np.float64)
@@ -153,13 +136,17 @@ def create_tool_box(pool: MPIExecutor = None, observer = None, instances_paths =
 
     toolbox.register("evaluate", evalSymbReg)
 
-    assert (instances_paths is None and scip_params is None) or (instances_paths is not None and scip_params is not None), "If one argument is provided, the 3 must be set"
+    toolbox.register("simplify", simplify)
+
+    assert (instances_paths is None and scip_params is None) or (
+            instances_paths is not None and scip_params is not None), "If one argument is provided, the 3 must be set"
     if instances_paths is not None:
         args = [instances_paths, pool, observer, scip_params]
         toolbox.register("map", mapp, args=args)
 
     create_tool_box.toolbox = toolbox
     return toolbox, pset
+
 
 def get_known_individuals(pset):
     relpscost1 = creator.Individual(
@@ -171,16 +158,61 @@ def get_known_individuals(pset):
     hybrid1 = creator.Individual(
         gp.PrimitiveTree.from_string("if_then_else(lt(ARG18,6), ARG30, ARG23)", pset))
     hybrid2 = creator.Individual(
-            gp.PrimitiveTree.from_string("if_then_else(lt(ARG18,4), ARG30, ARG23)", pset))
+        gp.PrimitiveTree.from_string("if_then_else(lt(ARG18,4), ARG30, ARG23)", pset))
 
     return [relpscost1, relpscost2, pscost, hybrid1, hybrid2]
 
-def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_individual_path="best_ind", scip_params = {}):
+
+def simplify(individual: gp.PrimitiveTree):
+    """Simplify a DEAP GP expression (PrimitiveTree)."""
+
+    def flatten(lst):
+        for item in lst:
+            if isinstance(item, list):
+                yield from flatten(item)
+            else:
+                yield item
+
+    def _eval(elements):
+        """Recursively simplify the GP expression. Each call to _val consume some elements in the list "elements" """
+        expr = elements.pop(0)
+
+        if isinstance(expr, gp.Primitive):
+            args_elements = [_eval(elements) for _ in range(expr.arity)]
+            args = [els[0] for els in args_elements]
+
+            name = expr.name
+
+            # Try simplifying based on known patterns
+            if name in ["min", "max"] and args[0] == args[1]:
+                return args_elements[0]
+            elif name in ["lt", "gt"] and args[0] == args[1]:
+                return gp.Terminal("False", False, bool)
+            elif name == "if_then_else":
+                cond, a, b = args
+                if isinstance(cond, gp.Terminal) and isinstance(cond.value, bool):
+                    return args_elements[1] if cond.value else args_elements[2]
+                elif a == b:
+                    return args_elements[0]
+            # No simplification rule applies, return as is
+            return [gp.Primitive(expr.name, args, expr.ret)] + list(flatten(args_elements))
+        else:
+            return [expr]  # constants, variables
+
+    new_elements = _eval(individual[:])
+
+    new_individual = creator.Individual(gp.PrimitiveTree(new_elements))
+    new_individual.fitness = individual.fitness
+    return new_individual
+
+
+def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_individual_path="best_ind",
+          scip_params={}):
     instances_path = []
     files = []
 
     print("Presolving.....")
-    for i,instance in enumerate(instances):
+    for i, instance in enumerate(instances):
         prob_file = tempfile.NamedTemporaryFile(suffix=".lp")
         if type(instance) is str:
             model = pyscipopt.Model()
@@ -212,16 +244,10 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
     mstats.register("min", np.min)
     mstats.register("max", np.max)
 
-    for i in range(n_generations):
-        print(i)
-        pop, log = algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 1, stats=mstats,
-                                       halloffame=hof, verbose=True)
+    ea.evolution_algorithm(pop, toolbox, 0.5, 0.2, n_generations, stats=mstats,
+                           halloffame=hof, verbose=True, best_individual_path=best_individual_path)
 
-        # best = min(pop, key=lambda ind: ind.fitness.values[0])
-        best = hof.items[0]
-        pickle.dump(best, open(best_individual_path, "wb"))
-
-    print(best)
+    print(hof[0])
 
     for file in files:
         file.close()
