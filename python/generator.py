@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import dill as pickle
 from observer import MyObserver
@@ -113,10 +114,22 @@ class Generator:
 
 if __name__ == "__main__":
     from utils import create_tool_box
-    name = "best_ca"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--individual", help="Individual file", type=str, required=True)
+    parser.add_argument("-o", "--out", help="Output directory", type=str, required=True)
+    args = parser.parse_args()
+
     observer = MyObserver()
     toolbox, pset = create_tool_box(observer=observer)
-    individial = pickle.load(open(f"individuals/{name}", "rb"))
+    individial = pickle.load(open(args.individual, "rb"))
     print(individial)
     gen = Generator(str(individial))
-    gen.generate_file(name, "observer_generation")
+
+    current_dir = os.getcwd()
+    template_dir = os.path.join(os.path.abspath(os.path.join(current_dir, os.pardir)), "observer_generation", "template.cpp")
+
+
+    _, name = os.path.split(args.individual)
+
+    gen.generate_file(name, args.out, template_dir)

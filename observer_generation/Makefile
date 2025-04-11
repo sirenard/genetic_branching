@@ -17,6 +17,8 @@ SOURCES := ../src/ArrayView.cpp ../src/Obs.cpp ../src/StaticFeaturesObs.cpp ../s
 
 OBJS := $(patsubst ../src/%.cpp, ./build/%.o, $(SOURCES))
 
+THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
 # Disable all implicit rules
 .SUFFIXES:
 %: %,v
@@ -26,14 +28,18 @@ OBJS := $(patsubst ../src/%.cpp, ./build/%.o, $(SOURCES))
 %: SCCS/s.%
 
 # Keep .o files after build
-.PRECIOUS: ./build/%.o
+.PRECIOUS: ./build/%.o ./build/%.cpp
 
 ./build/%.o: ../src/%.cpp
 	@mkdir -p $(@D)  # Ensure dir exists
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+./build/%.cpp:
+	python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
+
 # Pattern rule to build any module
-%: %.cpp $(OBJS)
+%: ./build/%.cpp $(OBJS)
+	@mkdir -p lib
 	$(CXX) $(CXXFLAGS) $^ -o $@$(TARGET_SUFFIX) $(LDFLAGS)
 
 

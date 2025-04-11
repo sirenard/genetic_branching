@@ -7,9 +7,9 @@
 #include <pybind11/stl.h>
 #include <scip/scip.h>
 
-#include "../src/DynamicFeaturesObs.h"
-#include "../src/StaticFeaturesObs.h"
-#include "../src/TreeFeaturesObs.h"
+#include "../../src/DynamicFeaturesObs.h"
+#include "../../src/StaticFeaturesObs.h"
+#include "../../src/TreeFeaturesObs.h"
 
 #define FORMULA 0
 
