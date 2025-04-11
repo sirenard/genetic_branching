@@ -1,10 +1,12 @@
 # Customized version of  deap.eaSimple
+from random import random
+
 from deap.algorithms import varAnd
 from deap.tools import Logbook
 import dill as pickle
 
 
-def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
+def evolution_algorithm(population, toolbox, cxpb, mutpb, simppb, ngen, stats=None,
              halloffame=None, verbose=__debug__, best_individual_path=None):
     """This algorithm reproduce the simplest evolutionary algorithm as
     presented in chapter 7 of [Back2000]_.
@@ -14,6 +16,7 @@ def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
                     operators.
     :param cxpb: The probability of mating two individuals.
     :param mutpb: The probability of mutating an individual.
+    :param simppb: The probability of simplifying an individual.
     :param ngen: The number of generation.
     :param stats: A :class:`~deap.tools.Statistics` object that is updated
                   inplace, optional.
@@ -76,10 +79,6 @@ def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
     if halloffame is not None:
         halloffame.update(population)
 
-        # Save the best individual seen so far
-        best = halloffame.items[0]
-        pickle.dump(best, open(best_individual_path, "wb"))
-
     record = stats.compile(population) if stats else {}
     logbook.record(gen=0, nevals=len(invalid_ind), **record)
     if verbose:
@@ -95,7 +94,10 @@ def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
 
         simplified_offspring = []
         for individual in offspring:
-            new_individual = toolbox.simplify(individual)
+            if random() < simppb:
+                new_individual = toolbox.simplify(individual)
+            else:
+                new_individual = individual
             simplified_offspring.append(new_individual)
 
         offspring = simplified_offspring
@@ -110,6 +112,10 @@ def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
         if halloffame is not None:
             halloffame.update(offspring)
 
+            # Save the best individual seen so far
+            best = halloffame.items[0]
+            pickle.dump(best, open(best_individual_path, "wb"))
+
         # Replace the current population by the offspring
         population[:] = offspring
 
@@ -119,4 +125,5 @@ def evolution_algorithm(population, toolbox, cxpb, mutpb, ngen, stats=None,
         if verbose:
             print(logbook.stream)
 
+    population = [toolbox.simplify(individual) for individual in population]
     return population, logbook
