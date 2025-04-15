@@ -40,7 +40,7 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 # Pattern rule to build any module
 %: ./build/%.cpp $(OBJS)
 	@mkdir -p lib
-	$(CXX) $(CXXFLAGS) $^ -o $@$(TARGET_SUFFIX) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o ./lib/$@$(TARGET_SUFFIX) $(LDFLAGS)
 
 
 # Clean rule
