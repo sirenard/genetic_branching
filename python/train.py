@@ -1,35 +1,64 @@
+import argparse
+
 import ecole
 from mpipool import MPIExecutor
 from mpi4py.MPI import COMM_WORLD
 
 from observer import MyObserver
 from utils import train, create_tool_box
-
-n_instances = 1
-
-
-instances_ca = ecole.instance.CombinatorialAuctionGenerator(n_items=100, n_bids=500)
-instances_ca.seed(12)
-
-instances_sc = ecole.instance.SetCoverGenerator(n_rows=500, n_cols=1000)
-instances_sc.seed(12)
-
-instances_cfl = ecole.instance.CapacitatedFacilityLocationGenerator(n_customers=100)
-instances_cfl.seed(12)
-
-instances_mis = ecole.instance.IndependentSetGenerator(500)
-instances_mis.seed(12)
-
-
-instances = [instance for _, *instances in zip(range(n_instances), instances_ca, instances_sc, instances_cfl, instances_mis) for instance in instances]
-
-scip_params = {
-    "limits/time": 60,
-    "estimation/method": "c",
-    "estimation/completiontype": "m"
-}
+import pickle
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Evaluate a set of solvers on an instance generator")
+
+    # Instances
+    parser.add_argument("--difficulty", choices=["easy", "medium", "hard"], default="easy", type=str,
+                        help="Difficulty of the instances. Useful only if --instances is provided")
+    parser.add_argument("--seed", default=-1, type=int, help="Seed of the instance generator")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--instances", choices=["ca", "cfl", "sc", "mis"], type=str, help="Type of instances to use")
+    group.add_argument("--external_instances", type=str, help="Pickle file of a custom instance generator")
+    parser.add_argument("--n_instances", type=int, help="Number of instances to solve", required=True)
+
+    parser.add_argument("--time", type=int, default=300, help="Time limit for each instance")
+    parser.add_argument("--out", type=str, help="Pickle output file of the resulting SolverEvaluationResult", required=True)
+
+    args = parser.parse_args()
+
+    if args.instances is not None:
+        match args.instances:
+            case "ca":
+                kwargs = {"easy": {"n_items": 100, "n_bids": 500}, "medium": {"n_items": 200, "n_bids": 1000},
+                          "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
+                instances = ecole.instance.CombinatorialAuctionGenerator(**kwargs)
+            case "cfl":
+                kwargs = {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
+                    args.difficulty]
+                instances = ecole.instance.CapacitatedFacilityLocationGenerator(**kwargs)
+            case "sc":
+                kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
+                          "hard": {"n_rows": 1500, "n_cols": 1000}, }[args.difficulty]
+                instances = ecole.instance.SetCoverGenerator(**kwargs)
+            case "mis":
+                kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
+                    args.difficulty]
+                instances = ecole.instance.IndependentSetGenerator(**kwargs)
+            case _:
+                raise NotImplementedError
+    else:
+        instances = pickle.load(open(args.external_instances, "rb"))
+
+    if args.seed is not None:
+        instances.seed(1212)
+
+    instances = [instance for _, instance in zip(range(args.n_instances), instances)]
+
+    scip_params = {
+        "limits/time": args.time,
+        "estimation/method": "c",
+        "estimation/completiontype": "m"
+    }
+
     observer = MyObserver()
 
     if COMM_WORLD.rank:
@@ -42,9 +71,9 @@ if __name__ == "__main__":
             pool,
             observer=observer,
             instances=instances,
-            pop_size=5,
-            n_generations=3,
-            best_individual_path="./individuals/test",
+            pop_size=50,
+            n_generations=200,
+            best_individual_path=args.out,
             scip_params=scip_params
         )
 

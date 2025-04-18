@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Evaluate a set of solvers on an instance generator")
 
     # Solvers
-    parser.add_argument("--classic_solvers", nargs='+', default=["relpscost", "pscost"], type=str,
+    parser.add_argument("--classic_solvers", nargs='+', default=[], type=str,
                         help="List of branching strategies names to use (e.g. 'relpscost', 'pscost'")
     parser.add_argument("--genetic_solvers", nargs='+', default=[], type=str,
                         help="List of branching strategies name to use that use genetic branching. It must consist of a python module in folder observer_generation/lib")
@@ -33,8 +33,6 @@ if __name__ == '__main__':
     parser.add_argument("--out", type=str, help="Pickle output file of the resulting SolverEvaluationResult")
 
     args = parser.parse_args()
-
-    print(args)
 
     if args.instances is not None:
         match args.instances:
