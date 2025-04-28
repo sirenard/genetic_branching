@@ -244,7 +244,7 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
     mstats.register("min", np.min)
     mstats.register("max", np.max)
 
-    ea.evolution_algorithm(pop, toolbox, 0.5, 0.2, 0.1, n_generations, stats=mstats,
+    ea.evolution_algorithm(pop, toolbox, 0.5, 0.2, 0.0, n_generations, stats=mstats,
                            halloffame=hof, verbose=True, best_individual_path=best_individual_path)
 
     print(hof[0])

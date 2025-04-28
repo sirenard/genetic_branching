@@ -34,6 +34,9 @@ if __name__ == "__main__":
         parser.add_argument("--out", type=str, help="Pickle output file of the resulting SolverEvaluationResult",
                             required=True)
 
+        parser.add_argument("--n_gen", type=int, help="Number of generations to use", default=100)
+        parser.add_argument("--pop_size", type=int, help="Population size", default=30)
+
         args = parser.parse_args()
 
         if args.instances is not None:
@@ -77,8 +80,8 @@ if __name__ == "__main__":
             pool,
             observer=observer,
             instances=instances,
-            pop_size=50,
-            n_generations=200,
+            pop_size=args.pop_size,
+            n_generations=args.n_gen,
             best_individual_path=args.out,
             scip_params=scip_params
         )
