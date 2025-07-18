@@ -1,14 +1,17 @@
 import argparse
 import pickle
 
+import boundml
 import ecole
+import torch
 from boundml.evaluation_tools import evaluate_solvers, SolverEvaluationResults
 from boundml.solvers import ClassicSolver
 
 from ClassicSolverCustomBranching import ClassicSolverCustomBranching
-
+from folder_instance import FolderInstanceGenerator
 
 if __name__ == '__main__':
+    # torch.set_num_threads(1)
     parser = argparse.ArgumentParser(description="Evaluate a set of solvers on an instance generator")
 
     # Solvers
@@ -26,6 +29,8 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--instances", choices=["ca", "cfl", "sc", "mis"], type=str, help="Type of instances to use")
     group.add_argument("--external_instances", type=str, help="Pickle file of a custom instance generator")
+    group.add_argument("--folder_instances", type=str, help="Folder containing instances to use")
+
     parser.add_argument("--n_instances", type=int, help="Number of instances to solve", required=True)
 
     parser.add_argument("--ncpu", type=int, default=1, help="Number of CPU cores to use")
@@ -54,8 +59,10 @@ if __name__ == '__main__':
                 instances = ecole.instance.IndependentSetGenerator(**kwargs)
             case _:
                 raise NotImplementedError
-    else:
+    elif args.external_instances:
         instances = pickle.load(open(args.external_instances, "rb"))
+    else:
+        instances = FolderInstanceGenerator(args.folder_instances)
 
     if args.seed is not None:
         instances.seed(1212)
@@ -71,10 +78,14 @@ if __name__ == '__main__':
 
     external_solvers = [pickle.load(open(path, "rb")) for path in args.solvers]
 
+    for solver in external_solvers:
+        solver.set_params(scip_params)
+
     solvers.extend(custom_solvers)
     solvers.extend(external_solvers)
 
     metrics = ["nnodes", "time", "gap"]
+
 
     data = evaluate_solvers(solvers, instances, args.n_instances, metrics, args.ncpu)
 
