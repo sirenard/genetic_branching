@@ -1,11 +1,13 @@
 import argparse
 import itertools
+import tempfile
 
 import ecole
 from mpipool import MPIExecutor
 from mpi4py.MPI import COMM_WORLD
 
 from observer import MyObserver
+from folder_instance import FolderInstanceGenerator
 from utils import train, create_tool_box
 import pickle
 
@@ -28,6 +30,8 @@ if __name__ == "__main__":
         group.add_argument("--instances", choices=["ca", "cfl", "sc", "mis"], type=str, nargs='+',
                            help="Type of instances to use")
         group.add_argument("--external_instances", type=str, help="Pickle file of a custom instance generator")
+        group.add_argument("--folder_instances", type=str, help="Folder containing instances to use")
+
         parser.add_argument("--n_instances", type=int, help="Number of instances to solve", required=True)
 
         parser.add_argument("--time", type=int, default=300, help="Time limit for each instance")
@@ -37,7 +41,12 @@ if __name__ == "__main__":
         parser.add_argument("--n_gen", type=int, help="Number of generations to use", default=100)
         parser.add_argument("--pop_size", type=int, help="Population size", default=30)
 
+        parser.add_argument("--tmp_folder", type=str, help="Folder path used for temp files, by default use system path")
+
         args = parser.parse_args()
+
+        if args.tmp_folder:
+            tempfile.tempdir = args.tmp_folder
 
         if args.instances is not None:
             instances = []
@@ -67,8 +76,10 @@ if __name__ == "__main__":
                     instances_gen.seed(args.seed)
 
                 instances.extend(itertools.islice(instances_gen, args.n_instances))
-        else:
+        elif args.external_instances:
             instances = itertools.islice(pickle.load(open(args.external_instances, "rb")), args.n_instances)
+        else:
+            instances = itertools.islice(FolderInstanceGenerator(args.folder_instances), args.n_instances)
 
         scip_params = {
             "limits/time": args.time,
