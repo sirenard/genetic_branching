@@ -46,12 +46,12 @@ if __name__ == '__main__':
                     "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
                 instances = ecole.instance.CombinatorialAuctionGenerator(**kwargs)
             case "cfl":
-                kwargs = {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
+                kwargs = {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 400}, }[
                     args.difficulty]
                 instances = ecole.instance.CapacitatedFacilityLocationGenerator(**kwargs)
             case "sc":
                 kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
-                    "hard": {"n_rows": 1500, "n_cols": 1000}, }[args.difficulty]
+                    "hard": {"n_rows": 2000, "n_cols": 1000}, }[args.difficulty]
                 instances = ecole.instance.SetCoverGenerator(**kwargs)
             case "mis":
                 kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
