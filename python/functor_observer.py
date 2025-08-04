@@ -1,31 +1,31 @@
 import ecole
 import numpy as np
 import pyscipopt
-from boundml.observers import Observer
+from boundml.components import ScoringBranchingStrategy, BranchingComponent
+from pyscipopt import Model, SCIP_RESULT
 
 
-class FunctorObserver(Observer):
-    def __init__(self, scoring_functor, feature_observer=ecole.observation.Khalil2016()):
+class FunctorObserver(ScoringBranchingStrategy):
+    def __init__(self, scoring_functor, feature_observer: BranchingComponent):
         super().__init__()
         self.scoring_functor = scoring_functor
         self.feature_observer = feature_observer
 
-    def before_reset(self, model):
-        self.feature_observer.before_reset(model)
+    def reset(self, model: Model) -> None:
+        self.feature_observer.reset(model)
 
-    def extract(self, model, done):
-        m: pyscipopt.Model = model.as_pyscipopt()
-        candidates, *_ = m.getLPBranchCands()
-        prob_indexes = [var.getCol().getLPPos() for var in candidates]
+    def compute_scores(self, model: Model) -> None:
+        candidates, *_ = model.getLPBranchCands()
 
-        res = np.zeros(m.getNVars())
-        res[:] = np.nan
+        self.feature_observer.callback(model, passive=True)
+        features = self.feature_observer.observation
 
-        features = self.feature_observer.extract(model, done)
-        for i in prob_indexes:
-            res[i] = self.scoring_functor(*features[i])
+        var: pyscipopt.Variable
+        for i, var in candidates:
+            self.scores[i] = self.scoring_functor(*features[i])
 
-        return res
+    def done(self, model: Model) -> None:
+        self.feature_observer.done(model)
 
     def __str__(self):
         return "Func"

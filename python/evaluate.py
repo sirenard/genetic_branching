@@ -1,13 +1,12 @@
 import argparse
 import pickle
 
-import boundml
 import ecole
 import torch
 from boundml.evaluation_tools import evaluate_solvers, SolverEvaluationResults
-from boundml.solvers import ClassicSolver
+from boundml.solvers import DefaultScipSolver
 
-from ClassicSolverCustomBranching import ClassicSolverCustomBranching
+from gb_scip_solver import GbScipSolver
 from folder_instance import FolderInstanceGenerator
 
 if __name__ == '__main__':
@@ -69,12 +68,12 @@ if __name__ == '__main__':
 
     scip_params = {"limits/time": args.time, }
 
-    custom_solvers = [ClassicSolverCustomBranching(name, scip_params) for name in args.genetic_solvers]
+    custom_solvers = [GbScipSolver(name, scip_params) for name in args.genetic_solvers]
 
     for solver in custom_solvers:
         print(solver.get_expression())
 
-    solvers = [ClassicSolver(name, scip_params) for name in args.classic_solvers]
+    solvers = [DefaultScipSolver(name, scip_params) for name in args.classic_solvers]
 
     external_solvers = [pickle.load(open(path, "rb")) for path in args.solvers]
 

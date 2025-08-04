@@ -1,4 +1,3 @@
-import ecole
 import my_module
 import numpy as np
 from objproxies import LazyProxy

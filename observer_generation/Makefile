@@ -37,8 +37,14 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ./build/%.cpp:
 	python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
 
+# If new individual, clean the corresponding cpp file too make sure everything is generated from scratch
+../individuals/%:
+	#@rm build/$*.cpp
+	@echo $*
+
+
 # Pattern rule to build any module
-%: ./build/%.cpp $(OBJS)
+%: ../individuals/$* ./build/%.cpp $(OBJS)
 	@mkdir -p lib
 	$(CXX) $(CXXFLAGS) $^ -o ./lib/$@$(TARGET_SUFFIX) $(LDFLAGS)
 
@@ -48,4 +54,4 @@ clean:
 	rm -f ./build/*
 	rm -f *$(TARGET_SUFFIX)
 
-.PHONY: clean
+.PHONY: clean, ../individuals/%

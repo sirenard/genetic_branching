@@ -1,7 +1,6 @@
-import ecole.instance
+from boundml.instances import *
 from boundml.dataset_generator import DatasetGenerator
-from boundml.observers import StrongBranching
-from boundml.solvers import *
+from boundml.components import StrongBranching
 
 import argparse
 
@@ -12,10 +11,10 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
-    # instances = ecole.instance.CombinatorialAuctionGenerator(100, 500)
-    # instances = ecole.instance.IndependentSetGenerator(n_nodes = 500)
-    # instances = ecole.instance.CapacitatedFacilityLocationGenerator(n_customers=100)
-    instances = ecole.instance.SetCoverGenerator(n_rows = 500, n_cols = 1000)
+    # instances = CombinatorialAuctionGenerator(100, 500)
+    # instances = IndependentSetGenerator(n_nodes = 500)
+    # instances = CapacitatedFacilityLocationGenerator(n_customers=100)
+    instances = SetCoverGenerator(n_rows = 500, n_cols = 1000)
     instances.seed(args.seed)
 
     expert_probability = 0.1

@@ -2,7 +2,7 @@ import os
 import argparse
 
 import dill as pickle
-from observer import MyObserver
+from component import CustomComponent
 
 
 def is_float(expr: str):
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out", help="Output directory", type=str, required=True)
     args = parser.parse_args()
 
-    observer = MyObserver()
+    observer = CustomComponent()
     toolbox, pset = create_tool_box(observer=observer)
     individial = pickle.load(open(args.individual, "rb"))
     print(individial)

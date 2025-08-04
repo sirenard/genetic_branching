@@ -2,17 +2,17 @@ import argparse
 import itertools
 import tempfile
 
-import ecole
+from boundml.instances import *
 from mpipool import MPIExecutor
 from mpi4py.MPI import COMM_WORLD
 
-from observer import MyObserver
+from component import CustomComponent
 from folder_instance import FolderInstanceGenerator
 from utils import train, create_tool_box
 import pickle
 
 if __name__ == "__main__":
-    observer = MyObserver()
+    observer = CustomComponent()
 
     if COMM_WORLD.rank:
         create_tool_box(observer=observer)
@@ -55,20 +55,20 @@ if __name__ == "__main__":
                     case "ca":
                         kwargs = {"easy": {"n_items": 100, "n_bids": 500}, "medium": {"n_items": 200, "n_bids": 1000},
                                   "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
-                        instances_gen = ecole.instance.CombinatorialAuctionGenerator(**kwargs)
+                        instances_gen = CombinatorialAuctionGenerator(**kwargs)
                     case "cfl":
                         kwargs = \
                         {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
                             args.difficulty]
-                        instances_gen = ecole.instance.CapacitatedFacilityLocationGenerator(**kwargs)
+                        instances_gen = CapacitatedFacilityLocationGenerator(**kwargs)
                     case "sc":
                         kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
                                   "hard": {"n_rows": 1500, "n_cols": 1000}, }[args.difficulty]
-                        instances_gen = ecole.instance.SetCoverGenerator(**kwargs)
+                        instances_gen = SetCoverGenerator(**kwargs)
                     case "mis":
                         kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
                             args.difficulty]
-                        instances_gen = ecole.instance.IndependentSetGenerator(**kwargs)
+                        instances_gen = IndependentSetGenerator(**kwargs)
                     case _:
                         raise NotImplementedError
 

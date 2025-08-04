@@ -1,10 +1,10 @@
 import importlib
 import sys
 
-from boundml.solvers import ClassicSolver
+from boundml.solvers import DefaultScipSolver
 
 
-class ClassicSolverCustomBranching(ClassicSolver):
+class GbScipSolver(DefaultScipSolver):
     def __init__(self, branching_rule_name, scip_params={}):
         sys.path.append("observer_generation/lib")
         module = importlib.import_module(branching_rule_name)
@@ -13,7 +13,7 @@ class ClassicSolverCustomBranching(ClassicSolver):
         super().__init__(
             branching_rule_name,
             scip_params,
-            config_function=lambda model: module.add_branching(model.to_ptr(False))
+            configure=lambda model: module.add_branching(model.to_ptr(False))
         )
 
         self.state = (branching_rule_name, scip_params)
