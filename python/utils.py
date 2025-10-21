@@ -4,6 +4,7 @@ import tempfile
 import numpy as np
 import pyscipopt
 from boundml import solvers
+from boundml.solvers import ModularSolver
 from deap import base
 from deap import creator
 from deap import gp
@@ -12,7 +13,7 @@ from mpipool import MPIExecutor
 from objproxies import LazyProxy
 
 import ea
-from functor_observer import FunctorObserver
+from functor_observer import FunctorComponent
 
 
 def shifted_geometric_mean(values, shift=1.0):
@@ -24,8 +25,8 @@ def shifted_geometric_mean(values, shift=1.0):
 def solve(path, individual, feature_observer, scip_params):
     toolbox = create_tool_box()
     func = toolbox.compile(expr=individual)
-    solver = solvers.EcoleSolver(FunctorObserver(func, feature_observer), scip_params=scip_params,
-                                 config_function=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
+    solver = ModularSolver(FunctorComponent(func, feature_observer), scip_params=scip_params,
+                                 configure=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
     return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
 
@@ -219,7 +220,7 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
             model.setParam("display/verblevel", 0)
             model.readProblem(instance)
         else:
-            model = instance.as_pyscipopt()
+            model = instance
 
         model.presolve()
         model.writeProblem(prob_file.name, trans=True)

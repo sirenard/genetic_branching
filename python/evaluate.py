@@ -3,14 +3,23 @@ import pickle
 
 import ecole
 import torch
-from boundml.evaluation_tools import evaluate_solvers, SolverEvaluationResults
-from boundml.solvers import DefaultScipSolver
+from boundml.components import EcoleComponent
+from boundml.components.gnn_component import GnnBranching
+from boundml.evaluation import evaluate_solvers, SolverEvaluationResults
+
+from boundml.solvers import DefaultScipSolver, ModularSolver
+
+from boundml.instances import *
 
 from gb_scip_solver import GbScipSolver
 from folder_instance import FolderInstanceGenerator
 
 if __name__ == '__main__':
-    # torch.set_num_threads(1)
+    import multiprocess.context as ctx
+
+    ctx._force_start_method('spawn')
+
+    torch.set_num_threads(1)
     parser = argparse.ArgumentParser(description="Evaluate a set of solvers on an instance generator")
 
     # Solvers
@@ -18,8 +27,8 @@ if __name__ == '__main__':
                         help="List of branching strategies names to use (e.g. 'relpscost', 'pscost'")
     parser.add_argument("--genetic_solvers", nargs='+', default=[], type=str,
                         help="List of branching strategies name to use that use genetic branching. It must consist of a python module in folder observer_generation/lib")
-    parser.add_argument("--solvers", nargs='+', default=[], type=str,
-                        help="List of pickle files that represent a solver from boundml")
+    parser.add_argument("--gnn_solvers", nargs='+', default=[], type=str,
+                        help="List of GNN solvers")
 
     # Instances
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard"], default="easy", type=str,
@@ -43,19 +52,19 @@ if __name__ == '__main__':
             case "ca":
                 kwargs = {"easy": {"n_items": 100, "n_bids": 500}, "medium": {"n_items": 200, "n_bids": 1000},
                     "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
-                instances = ecole.instance.CombinatorialAuctionGenerator(**kwargs)
+                instances = CombinatorialAuctionGenerator(**kwargs)
             case "cfl":
                 kwargs = {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 400}, }[
                     args.difficulty]
-                instances = ecole.instance.CapacitatedFacilityLocationGenerator(**kwargs)
+                instances = CapacitatedFacilityLocationGenerator(**kwargs)
             case "sc":
                 kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
                     "hard": {"n_rows": 2000, "n_cols": 1000}, }[args.difficulty]
-                instances = ecole.instance.SetCoverGenerator(**kwargs)
+                instances = SetCoverGenerator(**kwargs)
             case "mis":
                 kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
                     args.difficulty]
-                instances = ecole.instance.IndependentSetGenerator(**kwargs)
+                instances = IndependentSetGenerator(**kwargs)
             case _:
                 raise NotImplementedError
     elif args.external_instances:
@@ -66,7 +75,13 @@ if __name__ == '__main__':
     if args.seed is not None:
         instances.seed(1212)
 
-    scip_params = {"limits/time": args.time, }
+    scip_params = {
+        #"timing/clocktype": 1,
+        "limits/time": args.time,
+        "estimation/method": "c",
+        "estimation/completiontype": "m"
+    }
+
 
     custom_solvers = [GbScipSolver(name, scip_params) for name in args.genetic_solvers]
 
@@ -75,10 +90,21 @@ if __name__ == '__main__':
 
     solvers = [DefaultScipSolver(name, scip_params) for name in args.classic_solvers]
 
-    external_solvers = [pickle.load(open(path, "rb")) for path in args.solvers]
+    external_solvers = []
 
-    for solver in external_solvers:
-        solver.set_params(scip_params)
+    for path in args.gnn_solvers:
+        component = GnnBranching(
+            path,
+            EcoleComponent(ecole.observation.NodeBipartite()),
+            try_use_gpu=True
+        )
+
+        external_solvers.append(
+            ModularSolver(
+                component,
+                scip_params=scip_params
+            )
+        )
 
     solvers.extend(custom_solvers)
     solvers.extend(external_solvers)
@@ -88,10 +114,6 @@ if __name__ == '__main__':
 
     data = evaluate_solvers(solvers, instances, args.n_instances, metrics, args.ncpu)
 
-    r = data.compute_report(SolverEvaluationResults.sg_metric("nnodes", 10),
-        SolverEvaluationResults.sg_metric("time", 1), SolverEvaluationResults.nwins("time"),
-        SolverEvaluationResults.nsolved(), SolverEvaluationResults.auc_score("time"))
-    print(r)
 
     if args.out is not None:
         pickle.dump(data, open(args.out, "wb"))

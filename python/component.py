@@ -35,7 +35,7 @@ class CustomComponent(BranchingComponent):
         self.observation = [None] * len(candidates)
 
         var: pyscipopt.Variable
-        for i, var in candidates:
+        for i, var in enumerate(candidates):
             index = var.getCol().getLPPos()
             if index not in self.static_observations:
                 self.static_observations[index] = ObservationWrapper(my_module.StaticFeaturesObs, p)
