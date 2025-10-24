@@ -50,20 +50,32 @@ if __name__ == '__main__':
     if args.instances is not None:
         match args.instances:
             case "ca":
-                kwargs = {"easy": {"n_items": 100, "n_bids": 500}, "medium": {"n_items": 200, "n_bids": 1000},
-                    "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
+                kwargs = {
+                    "easy": {"n_items": 200, "n_bids": 1000},
+                    "medium": {"n_items": 300, "n_bids": 1500},
+                    "hard": {"n_items": 400, "n_bids": 2000}
+                }[args.difficulty]
                 instances = CombinatorialAuctionGenerator(**kwargs)
             case "cfl":
-                kwargs = {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 400}, }[
-                    args.difficulty]
+                kwargs = {
+                    "easy": {"n_customers": 200},
+                    "medium": {"n_customers": 400},
+                    "hard": {"n_customers": 600},
+                }[args.difficulty]
                 instances = CapacitatedFacilityLocationGenerator(**kwargs)
             case "sc":
-                kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
-                    "hard": {"n_rows": 2000, "n_cols": 1000}, }[args.difficulty]
+                kwargs = {
+                    "easy": {"n_rows": 1000, "n_cols": 1000},
+                    "medium": {"n_rows": 1500, "n_cols": 1000},
+                    "hard": {"n_rows": 2000, "n_cols": 1000},
+                }[args.difficulty]
                 instances = SetCoverGenerator(**kwargs)
             case "mis":
-                kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
-                    args.difficulty]
+                kwargs = {
+                    "easy": {"n_nodes": 500},
+                    "medium": {"n_nodes": 1000},
+                    "hard": {"n_nodes": 1500},
+                }[args.difficulty]
                 instances = IndependentSetGenerator(**kwargs)
             case _:
                 raise NotImplementedError
@@ -109,7 +121,7 @@ if __name__ == '__main__':
     solvers.extend(custom_solvers)
     solvers.extend(external_solvers)
 
-    metrics = ["nnodes", "time", "gap"]
+    metrics = ["nnodes", "time", "gap", "obj"]
 
 
     data = evaluate_solvers(solvers, instances, args.n_instances, metrics, args.ncpu)

@@ -53,16 +53,16 @@ if __name__ == "__main__":
             for instances_name in args.instances:
                 match instances_name:
                     case "ca":
-                        kwargs = {"easy": {"n_items": 100, "n_bids": 500}, "medium": {"n_items": 200, "n_bids": 1000},
+                        kwargs = {"easy": {"n_items": 200, "n_bids": 1000},
                                   "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
                         instances_gen = CombinatorialAuctionGenerator(**kwargs)
                     case "cfl":
                         kwargs = \
-                        {"easy": {"n_customers": 100}, "medium": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
+                        {"easy": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
                             args.difficulty]
                         instances_gen = CapacitatedFacilityLocationGenerator(**kwargs)
                     case "sc":
-                        kwargs = {"easy": {"n_rows": 500, "n_cols": 1000}, "medium": {"n_rows": 1000, "n_cols": 1000},
+                        kwargs = {"easy": {"n_rows": 1000, "n_cols": 1000},
                                   "hard": {"n_rows": 1500, "n_cols": 1000}, }[args.difficulty]
                         instances_gen = SetCoverGenerator(**kwargs)
                     case "mis":
@@ -82,6 +82,7 @@ if __name__ == "__main__":
             instances = itertools.islice(FolderInstanceGenerator(args.folder_instances), args.n_instances)
 
         scip_params = {
+            "timing/clocktype": 1,
             "limits/time": args.time,
             "estimation/method": "c",
             "estimation/completiontype": "m"

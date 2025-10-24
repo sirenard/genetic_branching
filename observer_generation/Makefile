@@ -11,7 +11,7 @@ TARGET_SUFFIX := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_con
 
 # Compiler flags
 CXXFLAGS := -O3 -Wall -shared -std=c++20 -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE)
-LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lz -lgmp -lm
+LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm
 
 SOURCES := ../src/ArrayView.cpp ../src/Obs.cpp ../src/StaticFeaturesObs.cpp ../src/TreeFeaturesObs.cpp ../src/DynamicFeaturesObs.cpp ../src/utils.cpp ../src/statistics.cpp
 
@@ -35,16 +35,12 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 ./build/%.cpp:
-	python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
+	#python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
 
-# If new individual, clean the corresponding cpp file too make sure everything is generated from scratch
-../individuals/%:
-	#@rm build/$*.cpp
-	@echo $*
 
 
 # Pattern rule to build any module
-%: ../individuals/$* ./build/%.cpp $(OBJS)
+%: ./build/%.cpp $(OBJS)
 	@mkdir -p lib
 	$(CXX) $(CXXFLAGS) $^ -o ./lib/$@$(TARGET_SUFFIX) $(LDFLAGS)
 

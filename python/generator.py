@@ -3,7 +3,7 @@ import argparse
 
 import dill as pickle
 from component import CustomComponent
-
+from utils import simplify
 
 def is_float(expr: str):
     try:
@@ -123,6 +123,8 @@ if __name__ == "__main__":
     observer = CustomComponent()
     toolbox, pset = create_tool_box(observer=observer)
     individial = pickle.load(open(args.individual, "rb"))
+    individial = simplify(individial)
+
     print(individial)
     gen = Generator(str(individial))
 
