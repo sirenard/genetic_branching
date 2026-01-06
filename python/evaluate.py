@@ -35,7 +35,7 @@ if __name__ == '__main__':
                         help="Difficulty of the instances. Useful only if --instances is provided")
     parser.add_argument("--seed", default=-1, type=int, help="Seed of the instance generator")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--instances", choices=["ca", "cfl", "sc", "mis"], type=str, help="Type of instances to use")
+    group.add_argument("--instances", type=str, help="Type of instances to use")
     group.add_argument("--external_instances", type=str, help="Pickle file of a custom instance generator")
     group.add_argument("--folder_instances", type=str, help="Folder containing instances to use")
 
@@ -59,8 +59,8 @@ if __name__ == '__main__':
             case "cfl":
                 kwargs = {
                     "easy": {"n_customers": 200},
-                    "medium": {"n_customers": 400},
-                    "hard": {"n_customers": 600},
+                    "medium": {"n_customers": 600},
+                    "hard": {"n_customers": 1000},
                 }[args.difficulty]
                 instances = CapacitatedFacilityLocationGenerator(**kwargs)
             case "sc":
@@ -78,7 +78,7 @@ if __name__ == '__main__':
                 }[args.difficulty]
                 instances = IndependentSetGenerator(**kwargs)
             case _:
-                raise NotImplementedError
+                instances = FolderInstances(args.instances)
     elif args.external_instances:
         instances = pickle.load(open(args.external_instances, "rb"))
     else:

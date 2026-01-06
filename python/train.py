@@ -27,7 +27,7 @@ if __name__ == "__main__":
                             help="Difficulty of the instances. Useful only if --instances is provided")
         parser.add_argument("--seed", default=-1, type=int, help="Seed of the instance generator")
         group = parser.add_mutually_exclusive_group(required=True)
-        group.add_argument("--instances", choices=["ca", "cfl", "sc", "mis"], type=str, nargs='+',
+        group.add_argument("--instances", type=str, nargs='+',
                            help="Type of instances to use")
         group.add_argument("--external_instances", type=str, help="Pickle file of a custom instance generator")
         group.add_argument("--folder_instances", type=str, help="Folder containing instances to use")
@@ -51,26 +51,37 @@ if __name__ == "__main__":
         if args.instances is not None:
             instances = []
             for instances_name in args.instances:
-                match instances_name:
+                match args.instances:
                     case "ca":
-                        kwargs = {"easy": {"n_items": 200, "n_bids": 1000},
-                                  "hard": {"n_items": 300, "n_bids": 1500}, }[args.difficulty]
+                        kwargs = {
+                            "easy": {"n_items": 200, "n_bids": 1000},
+                            "medium": {"n_items": 300, "n_bids": 1500},
+                            "hard": {"n_items": 400, "n_bids": 2000}
+                        }[args.difficulty]
                         instances_gen = CombinatorialAuctionGenerator(**kwargs)
                     case "cfl":
-                        kwargs = \
-                        {"easy": {"n_customers": 200}, "hard": {"n_customers": 300}, }[
-                            args.difficulty]
+                        kwargs = {
+                            "easy": {"n_customers": 200},
+                            "medium": {"n_customers": 600},
+                            "hard": {"n_customers": 1000},
+                        }[args.difficulty]
                         instances_gen = CapacitatedFacilityLocationGenerator(**kwargs)
                     case "sc":
-                        kwargs = {"easy": {"n_rows": 1000, "n_cols": 1000},
-                                  "hard": {"n_rows": 1500, "n_cols": 1000}, }[args.difficulty]
+                        kwargs = {
+                            "easy": {"n_rows": 1000, "n_cols": 1000},
+                            "medium": {"n_rows": 1500, "n_cols": 1000},
+                            "hard": {"n_rows": 2000, "n_cols": 1000},
+                        }[args.difficulty]
                         instances_gen = SetCoverGenerator(**kwargs)
                     case "mis":
-                        kwargs = {"easy": {"n_nodes": 500}, "medium": {"n_nodes": 1000}, "hard": {"n_nodes": 1500}, }[
-                            args.difficulty]
+                        kwargs = {
+                            "easy": {"n_nodes": 500},
+                            "medium": {"n_nodes": 1000},
+                            "hard": {"n_nodes": 1500},
+                        }[args.difficulty]
                         instances_gen = IndependentSetGenerator(**kwargs)
                     case _:
-                        raise NotImplementedError
+                        instances_gen = FolderInstances(instances_name)
 
                 if args.seed is not None:
                     instances_gen.seed(args.seed)

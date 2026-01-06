@@ -101,7 +101,7 @@ def create_tool_box(pool: MPIExecutor = None, observer=None, instances_paths=Non
     add_operator(lambda x: not x, [bool], bool, "not")
     add_operator(operator.lt, [np.float64, np.float64], bool, "lt")
     add_operator(operator.gt, [np.float64, np.float64], bool, "gt")
-    add_operator(operator.neg, [np.float64], np.float64, "neg")
+    add_operator(operator.neg, [bool], bool, "neg")
     add_operator(if_then_else, [bool, np.float64, np.float64], np.float64, "if_then_else", lazy=True)
     add_operator(min, [np.float64, np.float64], np.float64, "min")
     add_operator(max, [np.float64, np.float64], np.float64, "max")
@@ -214,7 +214,7 @@ def train(pool: MPIExecutor, observer, instances, pop_size, n_generations, best_
 
     print("Presolving.....")
     for i, instance in enumerate(instances):
-        prob_file = tempfile.NamedTemporaryFile(suffix=".lp")
+        prob_file = tempfile.NamedTemporaryFile(suffix=".mps")
         if type(instance) is str:
             model = pyscipopt.Model()
             model.setParam("display/verblevel", 0)
