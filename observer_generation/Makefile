@@ -35,7 +35,7 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 ./build/%.cpp:
-	#python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
+	python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
 
 
 
