@@ -51,7 +51,7 @@ if __name__ == "__main__":
         if args.instances is not None:
             instances = []
             for instances_name in args.instances:
-                match args.instances:
+                match instances_name:
                     case "ca":
                         kwargs = {
                             "easy": {"n_items": 200, "n_bids": 1000},
