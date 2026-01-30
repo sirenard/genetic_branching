@@ -74,8 +74,6 @@ double TreeFeaturesObs::treeWeight() {
             SCIP_NODE *node = leaves[i];
             treeWeight += std::pow(2, -SCIPnodeGetDepth(node));
         }
-
-        SCIPfreeBufferArray(scip, &leaves);
     }
 
     return treeWeight;
