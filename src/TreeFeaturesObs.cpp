@@ -64,15 +64,18 @@ double TreeFeaturesObs::ssg() {
 
 double TreeFeaturesObs::treeWeight() {
     double treeWeight = 0;
-
-    int nleaves = SCIPgetNLeaves(scip);
-    SCIP_NODE **leaves = new SCIP_NODE *[nleaves];
+    int nleaves = 0;
+    SCIP_NODE **leaves = nullptr;
 
     SCIPgetLeaves(scip, &leaves, &nleaves);
 
-    for (int i = 0; i < nleaves; i++) {
-        SCIP_NODE *node = leaves[i];
-        treeWeight += std::pow(2, -SCIPnodeGetDepth(node));
+    if (leaves != nullptr) {
+        for (int i = 0; i < nleaves; i++) {
+            SCIP_NODE *node = leaves[i];
+            treeWeight += std::pow(2, -SCIPnodeGetDepth(node));
+        }
+
+        SCIPfreeBufferArray(scip, &leaves);
     }
 
     return treeWeight;
