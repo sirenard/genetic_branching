@@ -50,29 +50,19 @@ void DynamicFeaturesObs::compute(int index) {
 }
 
 std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
-    auto col = SCIPvarGetCol(var);
+    auto const solval = SCIPvarGetLPSol(var);
+    SCIP_Real down_val = SCIPgetVarPseudocostVal(scip, var, -SCIPfrac(scip, solval));
+    SCIP_Real up_val   = SCIPgetVarPseudocostVal(scip, var, 1.0 - SCIPfrac(scip, solval));
 
-    auto const solval = SCIPcolGetPrimsol(col);
-    auto const floor_distance = SCIPfeasFrac(scip, solval);
-    auto const ceil_distance = 1. - floor_distance;
-    auto const weighted_pseudocost_up = ceil_distance * SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS);
-    auto const weighted_pseudocost_down = floor_distance * SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS);
-    auto constexpr epsilon = 1e-5;
-    auto const wpu_approx = std::max(weighted_pseudocost_up, epsilon);
-    auto const wpd_approx = std::max(weighted_pseudocost_down, epsilon);
-    auto const weighted_pseudocost_ratio = safe_div<double>(std::min(wpu_approx, wpd_approx),
-                                                            std::max(wpu_approx, wpd_approx));
-    double gain[2] = {weighted_pseudocost_down, weighted_pseudocost_up};
+    // Fetch the final combined discounted score
+    SCIP_Real score    = SCIPgetVarDPseudocostScore(scip, var, solval, 0.2);
 
     return {
-        std::min(floor_distance, ceil_distance),
-        ceil_distance,
-        weighted_pseudocost_up,
-        weighted_pseudocost_down,
-        // SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_UPWARDS),
-        // SCIPgetVarPseudocost(scip, var, SCIP_BRANCHDIR_DOWNWARDS),
-        //weighted_pseudocost_ratio,
-        SCIPgetBranchScoreMultiple(scip, var, 2, gain),
+        std::min(SCIPfeasFrac(scip, solval), 1.0 - SCIPfeasFrac(scip, solval)),
+        1.0 - SCIPfeasFrac(scip, solval),
+        up_val,
+        down_val,
+        score
     };
 }
 

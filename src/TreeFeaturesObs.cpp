@@ -5,6 +5,8 @@
 #include "TreeFeaturesObs.h"
 #include <scip/event_estim.h>
 
+#include "utils.h"
+
 TreeFeaturesObs::TreeFeaturesObs(SCIP* scip): Obs(scip, size){}
 
 TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(
@@ -51,9 +53,9 @@ double TreeFeaturesObs::gap() {
 }
 
 double TreeFeaturesObs::leafFrequency() {
-    int k = SCIPgetNNodes(scip);
-    int fk = SCIPgetNLeaves(scip);
-    return 1.0 / static_cast<double>(k) * (static_cast<double>(fk) - 0.5);
+    double k = static_cast<double>(SCIPgetNNodes(scip));
+    double fk = SCIPgetNLeaves(scip);
+    return safe_div<double>(fk - 0.5, k);
 }
 
 double TreeFeaturesObs::openNodes() {
@@ -80,9 +82,8 @@ double TreeFeaturesObs::treeWeight() {
 }
 
 double TreeFeaturesObs::completion() {
-    int nnodes = SCIPgetNNodes(scip);
+    double nnodes = static_cast<double>(SCIPgetNNodes(scip));
     double estimate = SCIPgetTreesizeEstimation(scip);
-
-    return static_cast<double>(nnodes) / estimate;
+    return safe_div<double>(nnodes, estimate);
 }
 

@@ -16,20 +16,12 @@ T safe_div(T a, T b) {
 
 template double safe_div<double>(double a, double b);
 
-SCIP_Var * getVarFromProbIndex(SCIP* scip, int probIndex) {
-    // int nCols = SCIPgetNLPCols(scip);
-    // auto cols = SCIPgetLPCols(scip);
+SCIP_Var* getVarFromProbIndex(SCIP* scip, int probIndex) {
+    SCIP_VAR** vars = SCIPgetVars(scip);
+    int nvars = SCIPgetNVars(scip);
 
-    int n = SCIPgetNLPBranchCands(scip);
-    SCIP_Var** vars;
-    SCIPgetLPBranchCands(scip, &vars, nullptr, nullptr, nullptr, nullptr, nullptr);
-
-    for (int i = 0; i < n; i++) {
-        auto var = vars[i];
-        if (SCIPvarGetProbindex(var) == probIndex) {
-            return var;
-        }
+    if (probIndex >= 0 && probIndex < nvars) {
+        return vars[probIndex];
     }
-    assert(false);
     return nullptr;
 }

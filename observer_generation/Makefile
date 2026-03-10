@@ -30,24 +30,37 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 # Keep .o files after build
 .PRECIOUS: ./build/%.o ./build/%.cpp
 
+# -----------------------------------------------------------
+# 1. Compile Static Objects
+# -----------------------------------------------------------
 ./build/%.o: ../src/%.cpp
-	@mkdir -p $(@D)  # Ensure dir exists
+	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-./build/%.cpp:
-	python ${THIS_DIR}/../python/generator.py -i ${THIS_DIR}/../individuals/$* -o ./build
+# -----------------------------------------------------------
+# 2. Generate CPP File (The Fix)
+# -----------------------------------------------------------
+# This rule tells Make: if we need 'build/X.cpp', look for '../individuals/X'
+# We use $< to represent the dependency (the individual file)
+./build/%.cpp: ../individuals/%
+	@mkdir -p $(@D)
+	$(PYTHON) $(THIS_DIR)/../python/generator.py -i $< -o ./build
 
-
-
-# Pattern rule to build any module
+# -----------------------------------------------------------
+# 3. Main Target (Link Everything)
+# -----------------------------------------------------------
+# Usage: make best_0
+# This matches any target name (%), checks if a .cpp exists in build,
+# and compiles it along with the static OBJS.
 %: ./build/%.cpp $(OBJS)
 	@mkdir -p lib
 	$(CXX) $(CXXFLAGS) $^ -o ./lib/$@$(TARGET_SUFFIX) $(LDFLAGS)
 
-
-# Clean rule
+# -----------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------
 clean:
 	rm -f ./build/*
-	rm -f *$(TARGET_SUFFIX)
+	rm -f ./lib/*$(TARGET_SUFFIX)
 
-.PHONY: clean, ../individuals/%
+.PHONY: clean

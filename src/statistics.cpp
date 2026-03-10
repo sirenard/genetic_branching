@@ -17,17 +17,24 @@ template<typename T, typename N> statistics<T, N>::statistics(T data, std::funct
     if(value < min) min = value;
     if(value > max) max = value;
 
-    float delta = value - min;
+    // Correct Welford's Algorithm
+    float delta = value - mean;
     mean += delta / n;
-    stdev += delta * (value - min);
+    float delta2 = value - mean;
+    stdev += delta * delta2;
   }
 
-  if(n<2){
+  if(n < 2){
     stdev = 0;
   } else{
-    stdev = std::sqrt(stdev/n);
+    stdev = std::sqrt(stdev / n);
   }
 
+  // Prevent +/- Infinity from destroying ML models if no elements matched
+  if (n == 0) {
+    min = 0.0;
+    max = 0.0;
+  }
   count = n;
 }
 

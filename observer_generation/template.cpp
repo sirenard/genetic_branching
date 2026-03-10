@@ -103,9 +103,27 @@ public:
                                    dynamic_feature);
 
           SCIP_Real score = FORMULA;
-          if (score > bestScore) {
+          // FIXED: Tie-breaking using SCIP tolerances, fractionality, and objective
+          if (i == 0 || SCIPisGT(scip, score, bestScore)) {
             bestScore = score;
             bestcand = i;
+          } else if (SCIPisEQ(scip, score, bestScore)) {
+            // Secondary tie-breaker: Fractionality closest to 0.5
+            SCIP_Real best_frac = SCIPfrac(scip, SCIPvarGetLPSol(lpcands[bestcand]));
+            SCIP_Real cand_frac = SCIPfrac(scip, SCIPvarGetLPSol(cand));
+            SCIP_Real best_dist = std::abs(best_frac - 0.5);
+            SCIP_Real cand_dist = std::abs(cand_frac - 0.5);
+
+            if (SCIPisLT(scip, cand_dist, best_dist)) {
+              bestScore = score;
+              bestcand = i;
+            } else if (SCIPisEQ(scip, cand_dist, best_dist)) {
+              // Tertiary tie-breaker: Highest objective coefficient
+              if (SCIPisGT(scip, SCIPvarGetObj(cand), SCIPvarGetObj(lpcands[bestcand]))) {
+                bestScore = score;
+                bestcand = i;
+              }
+            }
           }
         }
     }
@@ -113,6 +131,11 @@ public:
     SCIP_CALL(SCIPbranchVar(scip, lpcands[bestcand], NULL, NULL, NULL));
 
     *result = SCIP_BRANCHED;
+    return SCIP_OKAY;
+  }
+
+  SCIP_DECL_BRANCHEXECPS(scip_execps) override {
+    *result = SCIP_DIDNOTRUN;
     return SCIP_OKAY;
   }
 
