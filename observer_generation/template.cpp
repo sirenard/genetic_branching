@@ -49,8 +49,7 @@ public:
 };
 
 class template_name : public scip::ObjBranchrule {
-  std::map<int, DynamicFeaturesObs> dynamic_features;
-  std::map<int, StaticFeaturesObs> static_features;
+  std::vector<std::unique_ptr<StaticFeaturesObs>> static_features;
   std::unique_ptr<TreeFeaturesObs> tree_features;
 
 public:
@@ -59,8 +58,8 @@ public:
                       1) {}
 
   SCIP_DECL_BRANCHINITSOL(scip_initsol) override {
-    tree_features =
-        std::make_unique<TreeFeaturesObs>(scip);
+    tree_features = std::make_unique<TreeFeaturesObs>(scip);
+    static_features.resize(SCIPgetNVars(scip));
     return SCIP_OKAY;
   }
 
@@ -82,17 +81,13 @@ public:
           auto cand = lpcands[i];
 
           int prob_index = SCIPvarGetProbindex(cand);
-          if (!dynamic_features.contains(prob_index)) {
-            dynamic_features.insert(std::make_pair(
-                prob_index, DynamicFeaturesObs(scip)));
-          }
-          if (!static_features.contains(prob_index)) {
-            static_features.insert(std::make_pair(
-                prob_index, StaticFeaturesObs(scip)));
+
+          if (!static_features[prob_index]) {
+            static_features[prob_index] = std::make_unique<StaticFeaturesObs>(scip);
           }
 
-          auto dynamic_feature = dynamic_features.at(prob_index);
-          auto static_feature = static_features.at(prob_index);
+          auto dynamic_feature = DynamicFeaturesObs(scip);
+          auto& static_feature = *static_features[prob_index];
 
           dynamic_feature.reset();
 
@@ -140,7 +135,6 @@ public:
   }
 
   SCIP_DECL_BRANCHEXITSOL(scip_exitsol) override {
-    dynamic_features.clear();
     static_features.clear();
     return SCIP_OKAY;
   }
