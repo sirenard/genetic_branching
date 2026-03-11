@@ -65,10 +65,11 @@ public:
 
   SCIP_DECL_BRANCHEXECLP(scip_execlp) override {
     SCIP_VAR **lpcands;
+    SCIP_Real* lpsols;
     int nlpcands;
 
     /* get branching candidates */
-    SCIP_CALL(SCIPgetLPBranchCands(scip, &lpcands, NULL, NULL, NULL, &nlpcands,
+    SCIP_CALL(SCIPgetLPBranchCands(scip, &lpcands, &lpsols, NULL, NULL, &nlpcands,
                                    NULL));
 
     int bestcand = 0;
@@ -97,21 +98,19 @@ public:
                                    dynamic_feature);
 
           SCIP_Real score = FORMULA;
-          // FIXED: Tie-breaking using SCIP tolerances, fractionality, and objective
+          // Tie-breaking using SCIP tolerances, fractionality, and objective
           if (i == 0 || SCIPisGT(scip, score, bestScore)) {
             bestScore = score;
             bestcand = i;
           } else if (SCIPisEQ(scip, score, bestScore)) {
-            // Secondary tie-breaker: Fractionality closest to 0.5
-            SCIP_Real best_frac = SCIPfrac(scip, SCIPvarGetLPSol(lpcands[bestcand]));
-            SCIP_Real cand_frac = SCIPfrac(scip, SCIPvarGetLPSol(cand));
-            SCIP_Real best_dist = std::abs(best_frac - 0.5);
-            SCIP_Real cand_dist = std::abs(cand_frac - 0.5);
+            // Secondary tie-breaker: Pseudocosts
+            SCIP_Real best_pscost_score = SCIPgetVarDPseudocostScore(scip, lpcands[bestcand], lpsols[bestcand], 0.2);
+            SCIP_Real cand_pscost_score = SCIPgetVarDPseudocostScore(scip, cand, lpsols[i], 0.2);
 
-            if (SCIPisLT(scip, cand_dist, best_dist)) {
+            if (SCIPisGT(scip, cand_pscost_score, best_pscost_score)) {
               bestScore = score;
               bestcand = i;
-            } else if (SCIPisEQ(scip, cand_dist, best_dist)) {
+            } else if (SCIPisEQ(scip, cand_pscost_score, best_pscost_score)) {
               // Tertiary tie-breaker: Highest objective coefficient
               if (SCIPisGT(scip, SCIPvarGetObj(cand), SCIPvarGetObj(lpcands[bestcand]))) {
                 bestScore = score;
