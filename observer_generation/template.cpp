@@ -77,6 +77,7 @@ public:
     tree_features->reset();
 
     if(nlpcands > 1){
+        DynamicFeaturesObs dynamic_feature(scip);
         for (int i = 0; i < nlpcands; i++) {
           auto cand = lpcands[i];
 
@@ -86,11 +87,9 @@ public:
             static_features[prob_index] = std::make_unique<StaticFeaturesObs>(scip);
           }
 
-          auto dynamic_feature = DynamicFeaturesObs(scip);
           auto& static_feature = *static_features[prob_index];
 
           dynamic_feature.reset();
-
           dynamic_feature.setVar(prob_index);
           static_feature.setVar(prob_index);
 

@@ -18,53 +18,43 @@ TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(
 }
 
 void TreeFeaturesObs::compute(int index) {
-    double value;
     switch (index) {
         case 0:
-            value = gap();
+            assign_features(gap(), index);
             break;
         case 1:
-            value = leafFrequency();
+            assign_features(leafFrequency(), index);
             break;
         case 2:
-            value = treeWeight();
+            assign_features(treeWeight(), index);
             break;
         case 3:
-            value = completion();
+            assign_features(completion(), index);
             break;
         case 4:
-            value = depth();
+            assign_features(depth(), index);
             break;
         default:
-            value = 0;
+            break;
     }
-
-    features[index] = value;
-    computed[index] = true;
 }
 
 
-double TreeFeaturesObs::depth() {
-    return SCIPgetDepth(scip);
+std::array<double, 1> TreeFeaturesObs::depth() {
+    return {static_cast<double>(SCIPgetDepth(scip))};
 }
 
-double TreeFeaturesObs::gap() {
-    return SCIPgetGap(scip);
+std::array<double, 1> TreeFeaturesObs::gap() {
+    return {SCIPgetGap(scip)};
 }
 
-double TreeFeaturesObs::leafFrequency() {
+std::array<double, 1> TreeFeaturesObs::leafFrequency() {
     double k = static_cast<double>(SCIPgetNNodes(scip));
     double fk = SCIPgetNLeaves(scip);
-    return safe_div<double>(fk - 0.5, k);
+    return {safe_div<double>(fk - 0.5, k)};
 }
 
-double TreeFeaturesObs::openNodes() {
-}
-
-double TreeFeaturesObs::ssg() {
-}
-
-double TreeFeaturesObs::treeWeight() {
+std::array<double, 1> TreeFeaturesObs::treeWeight() {
     double treeWeight = 0;
     int nleaves = 0;
     SCIP_NODE **leaves = nullptr;
@@ -78,12 +68,12 @@ double TreeFeaturesObs::treeWeight() {
         }
     }
 
-    return treeWeight;
+    return {treeWeight};
 }
 
-double TreeFeaturesObs::completion() {
+std::array<double, 1> TreeFeaturesObs::completion() {
     double nnodes = static_cast<double>(SCIPgetNNodes(scip));
     double estimate = SCIPgetTreesizeEstimation(scip);
-    return safe_div<double>(nnodes, estimate);
+    return {safe_div<double>(nnodes, estimate)};
 }
 

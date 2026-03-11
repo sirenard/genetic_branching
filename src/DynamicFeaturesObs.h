@@ -21,26 +21,26 @@ class DynamicFeaturesObs: public Obs{
      * Compute weighted pseudocost (downward and upward) and variable's reduced cost
      * @return Vector of 3 features
      */
-    std::vector<double> getPseudoCosts();
+    std::array<double, 5> getPseudoCosts();
 
     /**
      * Infeasibility statistics.
      * Number and fraction of nodes for which applying SB to variable xj led to one (two) infeasible children (during data collection).
      * @return Vector of 4 features
      */
-    std::vector<double> getInfeasibilityStatistics();
+    std::array<double, 4> getInfeasibilityStatistics();
 
     /**
      * Compute and return the up and down improvement on the potential child of the variable
      * @return Vector of 2 features
      */
-    std::vector<double> getStrongBranchingScore();
+    std::array<double, 3> getStrongBranchingScore();
 
     /**
      * Return how many times the up and down improvement have been computed and valid
      * @return Vector of 2 features
      */
-    std::vector<double> getNSb();
+    std::array<double, 2> getNSb();
 
     void compute(int index) override;
 public:

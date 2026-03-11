@@ -28,28 +28,18 @@ DynamicFeaturesObs::DynamicFeaturesObs(py::object py_scip) : DynamicFeaturesObs(
 }
 
 void DynamicFeaturesObs::compute(int index) {
-    std::vector<double> tmp;
-    int start = 0;
     if (index < 5) {
-        tmp = getPseudoCosts();
+        assign_features(getPseudoCosts(), 0);
     } else if (index < 9) {
-        start = 5;
-        tmp = getInfeasibilityStatistics();
+        assign_features(getInfeasibilityStatistics(), 5);
     } else if (index < 12) {
-        start = 9;
-        tmp = getStrongBranchingScore();
+        assign_features(getStrongBranchingScore(), 9);
     } else if (index < 14) {
-        start = 12;
-        tmp = getNSb();
-    }
-
-    for (int i = 0; i < tmp.size(); i++) {
-        features[i + start] = tmp[i];
-        computed[i + start] = true;
+        assign_features(getNSb(), 12);
     }
 }
 
-std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
+std::array<double, 5> DynamicFeaturesObs::getPseudoCosts() {
     auto const solval = SCIPvarGetLPSol(var);
     SCIP_Real down_val = SCIPgetVarPseudocostVal(scip, var, -SCIPfrac(scip, solval));
     SCIP_Real up_val   = SCIPgetVarPseudocostVal(scip, var, 1.0 - SCIPfrac(scip, solval));
@@ -66,7 +56,7 @@ std::vector<double> DynamicFeaturesObs::getPseudoCosts() {
     };
 }
 
-std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
+std::array<double, 4> DynamicFeaturesObs::getInfeasibilityStatistics() {
     auto const n_infeasibles_up = SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_UPWARDS);
     auto const n_infeasibles_down = SCIPvarGetCutoffSum(var, SCIP_BRANCHDIR_DOWNWARDS);
     auto const n_branchings_up = static_cast<double>(SCIPvarGetNBranchings(var, SCIP_BRANCHDIR_UPWARDS));
@@ -79,7 +69,7 @@ std::vector<double> DynamicFeaturesObs::getInfeasibilityStatistics() {
     };
 }
 
-std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
+std::array<double, 3> DynamicFeaturesObs::getStrongBranchingScore() {
     if ( SCIPgetNLPBranchCands(scip) == 1 ) {
         auto tmp = getPseudoCosts();
         return {
@@ -145,7 +135,7 @@ std::vector<double> DynamicFeaturesObs::getStrongBranchingScore() {
     };
 }
 
-std::vector<double> DynamicFeaturesObs::getNSb() {
+std::array<double, 2> DynamicFeaturesObs::getNSb() {
     return {
         SCIPgetVarPseudocostCountCurrentRun(scip, var, SCIP_BRANCHDIR_UPWARDS),
         SCIPgetVarPseudocostCountCurrentRun(scip, var, SCIP_BRANCHDIR_DOWNWARDS),

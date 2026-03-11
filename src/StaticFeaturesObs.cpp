@@ -10,11 +10,11 @@ StaticFeaturesObs::StaticFeaturesObs(py::object py_scip) : StaticFeaturesObs(
     }
 }
 
-std::vector<double> StaticFeaturesObs::computeObjCoefficient() {
+std::array<double, 1> StaticFeaturesObs::computeObjCoefficient() {
     return {(SCIPvarGetObj(var))};
 }
 
-std::vector<double> StaticFeaturesObs::computeNonZeroCoefficientsStatistics() {
+std::array<double, 9> StaticFeaturesObs::computeNonZeroCoefficientsStatistics() {
     auto col = SCIPvarGetCol(var);
     int count = SCIPcolGetNLPNonz(col);
     auto data = ArrayView(SCIPcolGetVals(col), count);
@@ -35,7 +35,7 @@ std::vector<double> StaticFeaturesObs::computeNonZeroCoefficientsStatistics() {
     };
 }
 
-std::vector<double> StaticFeaturesObs::computeConstraintsDegreeStatistics() {
+std::array<double, 4> StaticFeaturesObs::computeConstraintsDegreeStatistics() {
     std::vector<double> degrees;
     auto col = SCIPvarGetCol(var);
     auto const n_rows = SCIPcolGetNNonz(col);
@@ -58,19 +58,11 @@ std::vector<double> StaticFeaturesObs::computeConstraintsDegreeStatistics() {
 
 void StaticFeaturesObs::compute(int index) {
     std::vector<double> tmp;
-    int start = 0;
     if (index < 1) {
-        tmp = computeObjCoefficient();
+        assign_features(computeObjCoefficient(), 0);
     } else if (index < 10) {
-        start = 1;
-        tmp = computeNonZeroCoefficientsStatistics();
+        assign_features(computeNonZeroCoefficientsStatistics(), 1);
     } else if (index < 14) {
-        start = 10;
-        tmp = computeConstraintsDegreeStatistics();
-    }
-
-    for (int i = 0; i < tmp.size(); i++) {
-        features[i + start] = tmp[i];
-        computed[i + start] = true;
+        assign_features(computeConstraintsDegreeStatistics(), 10);
     }
 }

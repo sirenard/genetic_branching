@@ -12,9 +12,18 @@ class Obs {
 protected:
     std::vector<double> features;
     std::vector<bool> computed;
-    virtual void compute(int index)=0;
     SCIP* scip;
     SCIP_Var* var {};
+
+    virtual void compute(int index)=0;
+
+    template<size_t S>
+    void assign_features(const std::array<double, S>& tmp, int start ) {
+        for (size_t i = 0; i < S; i++) {
+            features[i + start] = tmp[i];
+            computed[i + start] = true;
+        }
+    }
 public:
     Obs(SCIP* scip, int size);
 

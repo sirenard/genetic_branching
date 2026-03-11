@@ -14,9 +14,9 @@ namespace py = pybind11;
 
 class StaticFeaturesObs : public Obs {
 private:
-    std::vector<double> computeObjCoefficient();
-    std::vector<double> computeNonZeroCoefficientsStatistics();
-    std::vector<double> computeConstraintsDegreeStatistics();
+    std::array<double, 1> computeObjCoefficient();
+    std::array<double, 9> computeNonZeroCoefficientsStatistics();
+    std::array<double, 4> computeConstraintsDegreeStatistics();
 
 public:
     static const int size = 14;
