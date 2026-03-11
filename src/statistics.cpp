@@ -38,9 +38,8 @@ template<typename T, typename N> statistics<T, N>::statistics(T data, std::funct
   count = n;
 }
 
-template<typename T, typename N> statistics<T, N>::statistics(T data){
-  statistics(data, [](float value){return true;});
-}
+template<typename T, typename N>
+statistics<T, N>::statistics(T data) : statistics(data, [](N){return true;}) {}
 
 template class statistics<ArrayView<double>, double>;
 template class statistics<std::vector<double>, double>;
