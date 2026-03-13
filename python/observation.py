@@ -1,4 +1,4 @@
-import my_module
+import gb_features
 import numpy as np
 from objproxies import LazyProxy
 

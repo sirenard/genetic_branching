@@ -1,6 +1,6 @@
 import ecole
 import pyscipopt
-import my_module
+import gb_features
 
 from boundml.components import BranchingComponent
 from pyscipopt import Model, SCIP_RESULT
@@ -27,7 +27,7 @@ class CustomComponent(BranchingComponent):
 
         p = model.to_ptr(False)
         if self.first:
-            self.tree_observation = ObservationWrapper(my_module.TreeFeaturesObs, p)
+            self.tree_observation = ObservationWrapper(gb_features.TreeFeaturesObs, p)
             self.first = False
 
         self.tree_observation.reset()
@@ -38,8 +38,8 @@ class CustomComponent(BranchingComponent):
         for i, var in enumerate(candidates):
             index = var.getCol().getLPPos()
             if index not in self.static_observations:
-                self.static_observations[index] = ObservationWrapper(my_module.StaticFeaturesObs, p)
-                self.dynamic_observations[index] = ObservationWrapper(my_module.DynamicFeaturesObs, p)
+                self.static_observations[index] = ObservationWrapper(gb_features.StaticFeaturesObs, p)
+                self.dynamic_observations[index] = ObservationWrapper(gb_features.DynamicFeaturesObs, p)
 
             self.dynamic_observations[index].reset()
 
@@ -51,5 +51,5 @@ class CustomComponent(BranchingComponent):
         return SCIP_RESULT.DIDNOTRUN
 
     def __len__(self):
-        return my_module.StaticFeaturesObs.size() + my_module.DynamicFeaturesObs.size() + my_module.TreeFeaturesObs.size()
-        # return my_module.DynamicFeaturesObs.size() + my_module.TreeFeaturesObs.size()
+        return gb_features.StaticFeaturesObs.size() + gb_features.DynamicFeaturesObs.size() + gb_features.TreeFeaturesObs.size()
+        # return gb_features.DynamicFeaturesObs.size() + gb_features.TreeFeaturesObs.size()

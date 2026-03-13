@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(MyProject)
+project(GeneticBranching)
 
 option(ENABLE_PYTHON_MODULE "Enable python features" ON)
 
@@ -35,21 +35,32 @@ if(ENABLE_PYTHON_MODULE)
     find_package(pybind11 REQUIRED)
 
     # Build as a Python Module
-    pybind11_add_module(my_module ${SOURCE_FILES} src/my_module.cpp)
+    pybind11_add_module(gb_features ${SOURCE_FILES} src/gb_features.cpp)
 
-    install(TARGETS my_module LIBRARY DESTINATION ${Python3_SITEARCH})
+    install(TARGETS gb_features LIBRARY DESTINATION ${Python3_SITEARCH})
 else()
     # Build as a Static or Shared Library for other C++ projects
-    add_library(my_module STATIC ${SOURCE_FILES})
-    set_target_properties(my_module PROPERTIES POSITION_INDEPENDENT_CODE ON) # Add fPIC flag
+    add_library(gb_features STATIC ${SOURCE_FILES})
+    set_target_properties(gb_features PROPERTIES POSITION_INDEPENDENT_CODE ON) # Add fPIC flag
+
+    file(GLOB MY_HEADERS "${PROJECT_SOURCE_DIR}/src/*.h")
+    list(APPEND MY_HEADERS "${PROJECT_BINARY_DIR}/src/config.h")
+
+    # 3. Set the PUBLIC_HEADER property using the list
+    set_target_properties(gb_features PROPERTIES
+            PUBLIC_HEADER "${MY_HEADERS}"
+    )
+
     # Standard installation for a C++ library
-    install(TARGETS my_module
+    install(TARGETS gb_features
             ARCHIVE DESTINATION lib
-            LIBRARY DESTINATION lib)
+            LIBRARY DESTINATION lib
+            PUBLIC_HEADER DESTINATION include
+    )
 endif()
 
 # 4. Common Requirements for both Target Types
-target_include_directories(my_module PUBLIC
+target_include_directories(gb_features PUBLIC
         "${PROJECT_BINARY_DIR}/src"      # To find config.h
 )
-target_link_libraries(my_module PUBLIC scip)
+target_link_libraries(gb_features PUBLIC scip)

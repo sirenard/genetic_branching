@@ -13,7 +13,7 @@ void tmp(long scipl) {
     std::cout << SCIPgetStage(scip) << std::endl;;
 }
 
-PYBIND11_MODULE(my_module, m) {
+PYBIND11_MODULE(gb_features, m) {
     m.doc() = "pybind11 example plugin";
 
     py::class_<StaticFeaturesObs>(m, "StaticFeaturesObs")
