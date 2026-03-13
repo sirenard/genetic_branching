@@ -7,6 +7,8 @@
 
 #include <vector>
 #include <scip/scip.h>
+#include <array>
+
 
 class Obs {
 protected:

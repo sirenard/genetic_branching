@@ -8,9 +8,16 @@
 #include <vector>
 
 #include <scip/scip.h>
+#include <array>
+
+#include "config.h"
+
+#ifdef USE_PYTHON
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 namespace py = pybind11;
+#endif
+
 
 #include "Obs.h"
 
@@ -46,7 +53,9 @@ class DynamicFeaturesObs: public Obs{
 public:
     static const int size = 14;
     explicit DynamicFeaturesObs(SCIP* scip);
+    #ifdef USE_PYTHON
     explicit DynamicFeaturesObs(py::object py_scip);
+    #endif
 
 };
 

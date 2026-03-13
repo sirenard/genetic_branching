@@ -4,10 +4,14 @@
 
 #ifndef TREEFEATURESOBS_H
 #define TREEFEATURESOBS_H
+#include <array>
 
+#include "config.h"
+#ifdef USE_PYTHON
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 namespace py = pybind11;
+#endif
 
 #include "Obs.h"
 
@@ -22,7 +26,9 @@ class TreeFeaturesObs: public Obs {
 public:
     static const int size = 5;
     explicit TreeFeaturesObs(SCIP* scip);
+    #ifdef USE_PYTHON
     explicit TreeFeaturesObs(py::object pyscip);
+    #endif
 
     void compute(int index) override;
 };

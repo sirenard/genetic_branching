@@ -1,0 +1,8 @@
+// config.h.in
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// This line will be replaced by CMake
+@MACRO_STATUS@
+
+#endif

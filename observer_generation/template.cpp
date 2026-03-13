@@ -1,143 +1,134 @@
-#include <iostream>
-#include <map>
-#include <algorithm>
+#include "template_name.h"
 
-#include <objscip/objbranchrule.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <scip/scip.h>
-
-#include "../../src/DynamicFeaturesObs.h"
-#include "../../src/StaticFeaturesObs.h"
-#include "../../src/TreeFeaturesObs.h"
 
 #define FORMULA 0
 
 #define FORMULA_STR ""
 
+#ifdef USE_PYTHON
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 namespace py = pybind11;
+#endif
 
-class FeaturesWrapper {
-  StaticFeaturesObs &staticFeatures;
-  TreeFeaturesObs &treeFeatures;
-  DynamicFeaturesObs &dynamicFeatures;
 
-public:
-  FeaturesWrapper(StaticFeaturesObs &staticFeatures,
+
+template_name::FeaturesWrapper::FeaturesWrapper(StaticFeaturesObs &staticFeatures,
                   TreeFeaturesObs &treeFeatures,
                   DynamicFeaturesObs &dynamicFeatures)
       : staticFeatures(staticFeatures), treeFeatures(treeFeatures),
         dynamicFeatures(dynamicFeatures) {}
 
-  double operator[](int index) {
-    if (index < staticFeatures.size) {
-      return staticFeatures[index];
-    }
-
-    index -= staticFeatures.size;
-    if (index < treeFeatures.size) {
-      return treeFeatures[index];
-    }
-
-    index -= treeFeatures.size;
-    if (index < dynamicFeatures.size) {
-      return dynamicFeatures[index];
-    }
-
-    throw std::out_of_range("index out of range");
+  double template_name::FeaturesWrapper::operator[](int index) {
+  if (index < staticFeatures.size) {
+    return staticFeatures[index];
   }
-};
 
-class template_name : public scip::ObjBranchrule {
-  std::vector<std::unique_ptr<StaticFeaturesObs>> static_features;
-  std::unique_ptr<TreeFeaturesObs> tree_features;
+  index -= staticFeatures.size;
+  if (index < treeFeatures.size) {
+    return treeFeatures[index];
+  }
 
-public:
-  template_name(SCIP *scip)
+  index -= treeFeatures.size;
+  if (index < dynamicFeatures.size) {
+    return dynamicFeatures[index];
+  }
+
+  throw std::out_of_range("index out of range");
+}
+
+
+
+template_name::template_name(SCIP *scip)
       : ObjBranchrule(scip, "template_name", "Automatically generated", 0, -1,
                       1) {}
 
-  SCIP_DECL_BRANCHINITSOL(scip_initsol) override {
-    tree_features = std::make_unique<TreeFeaturesObs>(scip);
-    static_features.resize(SCIPgetNVars(scip));
-    return SCIP_OKAY;
-  }
+SCIP_DECL_BRANCHINITSOL(template_name::scip_initsol){
+  tree_features = std::make_unique<TreeFeaturesObs>(scip);
+  static_features.resize(SCIPgetNVars(scip));
+  return SCIP_OKAY;
+}
 
-  SCIP_DECL_BRANCHEXECLP(scip_execlp) override {
-    SCIP_VAR **lpcands;
-    SCIP_Real* lpsols;
-    int nlpcands;
+SCIP_DECL_BRANCHEXECLP(template_name::scip_execlp) {
+  SCIP_VAR **lpcands;
+  SCIP_Real* lpsols;
+  int nlpcands;
 
-    /* get branching candidates */
-    SCIP_CALL(SCIPgetLPBranchCands(scip, &lpcands, &lpsols, NULL, NULL, &nlpcands,
-                                   NULL));
+  /* get branching candidates */
+  SCIP_CALL(SCIPgetLPBranchCands(scip, &lpcands, &lpsols, NULL, NULL, &nlpcands,
+                                 NULL));
 
-    int bestcand = 0;
-    SCIP_Real bestScore = SCIP_REAL_MIN;
+  int bestcand = 0;
+  SCIP_Real bestScore = SCIP_REAL_MIN;
 
-    tree_features->reset();
+  tree_features->reset();
 
-    if(nlpcands > 1){
-        DynamicFeaturesObs dynamic_feature(scip);
-        for (int i = 0; i < nlpcands; i++) {
-          auto cand = lpcands[i];
+  if(nlpcands > 1){
+      DynamicFeaturesObs dynamic_feature(scip);
+      for (int i = 0; i < nlpcands; i++) {
+        auto cand = lpcands[i];
 
-          int prob_index = SCIPvarGetProbindex(cand);
+        int prob_index = SCIPvarGetProbindex(cand);
 
-          if (!static_features[prob_index]) {
-            static_features[prob_index] = std::make_unique<StaticFeaturesObs>(scip);
-          }
+        if (!static_features[prob_index]) {
+          static_features[prob_index] = std::make_unique<StaticFeaturesObs>(scip);
+        }
 
-          auto& static_feature = *static_features[prob_index];
+        auto& static_feature = *static_features[prob_index];
 
-          dynamic_feature.reset();
-          dynamic_feature.setVar(prob_index);
-          static_feature.setVar(prob_index);
+        dynamic_feature.reset();
+        dynamic_feature.setVar(prob_index);
+        static_feature.setVar(prob_index);
 
-          FeaturesWrapper features(static_feature, *tree_features,
-                                   dynamic_feature);
+        FeaturesWrapper features(static_feature, *tree_features,
+                                 dynamic_feature);
 
-          SCIP_Real score = FORMULA;
-          // Tie-breaking using SCIP tolerances, fractionality, and objective
-          if (i == 0 || SCIPisGT(scip, score, bestScore)) {
+        SCIP_Real score = FORMULA;
+        // Tie-breaking using SCIP tolerances, fractionality, and objective
+        if (i == 0 || SCIPisGT(scip, score, bestScore)) {
+          bestScore = score;
+          bestcand = i;
+        } else if (SCIPisEQ(scip, score, bestScore)) {
+          // Secondary tie-breaker: Pseudocosts
+          SCIP_Real best_pscost_score = SCIPgetVarDPseudocostScore(scip, lpcands[bestcand], lpsols[bestcand], 0.2);
+          SCIP_Real cand_pscost_score = SCIPgetVarDPseudocostScore(scip, cand, lpsols[i], 0.2);
+
+          if (SCIPisGT(scip, cand_pscost_score, best_pscost_score)) {
             bestScore = score;
             bestcand = i;
-          } else if (SCIPisEQ(scip, score, bestScore)) {
-            // Secondary tie-breaker: Pseudocosts
-            SCIP_Real best_pscost_score = SCIPgetVarDPseudocostScore(scip, lpcands[bestcand], lpsols[bestcand], 0.2);
-            SCIP_Real cand_pscost_score = SCIPgetVarDPseudocostScore(scip, cand, lpsols[i], 0.2);
-
-            if (SCIPisGT(scip, cand_pscost_score, best_pscost_score)) {
+          } else if (SCIPisEQ(scip, cand_pscost_score, best_pscost_score)) {
+            // Tertiary tie-breaker: Highest objective coefficient
+            if (SCIPisGT(scip, SCIPvarGetObj(cand), SCIPvarGetObj(lpcands[bestcand]))) {
               bestScore = score;
               bestcand = i;
-            } else if (SCIPisEQ(scip, cand_pscost_score, best_pscost_score)) {
-              // Tertiary tie-breaker: Highest objective coefficient
-              if (SCIPisGT(scip, SCIPvarGetObj(cand), SCIPvarGetObj(lpcands[bestcand]))) {
-                bestScore = score;
-                bestcand = i;
-              }
             }
           }
         }
-    }
-
-    SCIP_CALL(SCIPbranchVar(scip, lpcands[bestcand], NULL, NULL, NULL));
-
-    *result = SCIP_BRANCHED;
-    return SCIP_OKAY;
+      }
   }
 
-  SCIP_DECL_BRANCHEXECPS(scip_execps) override {
-    *result = SCIP_DIDNOTRUN;
-    return SCIP_OKAY;
-  }
+  SCIP_CALL(SCIPbranchVar(scip, lpcands[bestcand], NULL, NULL, NULL));
 
-  SCIP_DECL_BRANCHEXITSOL(scip_exitsol) override {
-    static_features.clear();
-    return SCIP_OKAY;
-  }
-};
+  *result = SCIP_BRANCHED;
+  return SCIP_OKAY;
+}
 
+SCIP_DECL_BRANCHEXECPS(template_name::scip_execps) {
+  *result = SCIP_DIDNOTRUN;
+  return SCIP_OKAY;
+}
+
+SCIP_DECL_BRANCHEXITSOL(template_name::scip_exitsol){
+  static_features.clear();
+  return SCIP_OKAY;
+}
+
+void include_template_name(SCIP *scip) {
+  SCIPincludeObjBranchrule(scip, new template_name(scip), TRUE);
+}
+
+
+#ifdef USE_PYTHON
 /** Creates and adds the custom branching rule to SCIP */
 void add_branching(py::object py_scip) {
   // Extract SCIP* from PyCapsule
@@ -147,8 +138,7 @@ void add_branching(py::object py_scip) {
   }
 
   SCIP *scip = static_cast<SCIP *>(scip_ptr);
-
-  SCIPincludeObjBranchrule(scip, new template_name(scip), TRUE);
+  include_template_name(scip);
 }
 
 std::string to_str(){
@@ -161,3 +151,4 @@ PYBIND11_MODULE(template_name, m) {
   m.def("to_str", &to_str,
         "Get the string formula");
 }
+#endif

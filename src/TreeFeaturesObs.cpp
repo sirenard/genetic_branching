@@ -9,6 +9,7 @@
 
 TreeFeaturesObs::TreeFeaturesObs(SCIP* scip): Obs(scip, size){}
 
+#ifdef USE_PYTHON
 TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(
         static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
     ) {
@@ -16,6 +17,7 @@ TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(
         throw py::error_already_set();
     }
 }
+#endif
 
 void TreeFeaturesObs::compute(int index) {
     switch (index) {

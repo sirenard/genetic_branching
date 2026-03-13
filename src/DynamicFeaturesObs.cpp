@@ -19,6 +19,7 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
 DynamicFeaturesObs::DynamicFeaturesObs(SCIP* scip): Obs(scip, size) {
 }
 
+#ifdef USE_PYTHON
 DynamicFeaturesObs::DynamicFeaturesObs(py::object py_scip) : DynamicFeaturesObs(
         static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
     ) {
@@ -26,6 +27,7 @@ DynamicFeaturesObs::DynamicFeaturesObs(py::object py_scip) : DynamicFeaturesObs(
         throw py::error_already_set();
     }
 }
+#endif
 
 void DynamicFeaturesObs::compute(int index) {
     if (index < 5) {

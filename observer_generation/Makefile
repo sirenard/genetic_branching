@@ -1,21 +1,33 @@
 # Compiler and flags
-CXX := g++
+CXX := g++ -std=c++23
 PYTHON := python3
-PYBIND11_INCLUDE := $(shell $(PYTHON) -m pybind11 --includes)
-PYTHON_INCLUDE := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_path('include'))")
+
+BUILD_PYTHON=ON
+
+FEATURES_INCLUDE=../src/
+
+
+ifeq ($(BUILD_PYTHON), ON)
+	PYBIND11_INCLUDE := $(shell $(PYTHON) -m pybind11 --includes)
+	PYTHON_INCLUDE := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_path('include'))")
+	# Auto-detect Python extension suffix
+    TARGET_SUFFIX := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
+	PYTHON_FLAG=-DUSE_PYTHON=ON
+    OUT_FILE = ./lib/$@$(TARGET_SUFFIX)
+else
+    OUT_FILE = ./lib/$@.so
+    PYTHON_FLAG =
+endif
+
 SCIP_INCLUDE := ${CONDA_PREFIX}/include/
 SCIP_LIB := ${CONDA_PREFIX}/lib
+MY_MODULE_PATH=../build
 
-# Auto-detect Python extension suffix
-TARGET_SUFFIX := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
+
 
 # Compiler flags
-CXXFLAGS := -O3 -Wall -shared -std=c++20 -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE)
-LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm
-
-SOURCES := ../src/ArrayView.cpp ../src/Obs.cpp ../src/StaticFeaturesObs.cpp ../src/TreeFeaturesObs.cpp ../src/DynamicFeaturesObs.cpp ../src/utils.cpp ../src/statistics.cpp
-
-OBJS := $(patsubst ../src/%.cpp, ./build/%.o, $(SOURCES))
+CXXFLAGS := $(PYTHON_FLAG) -O3 -Wall -shared -std=c++20 -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/src -I$(FEATURES_INCLUDE)
+LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm -L $(MY_MODULE_PATH) -lmy_module
 
 THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -27,40 +39,33 @@ THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 %: s.%
 %: SCCS/s.%
 
-# Keep .o files after build
-.PRECIOUS: ./build/%.o ./build/%.cpp
+.PRECIOUS: ./build/%.o ./src/%.cpp
 
 # -----------------------------------------------------------
-# 1. Compile Static Objects
+# Generate CPP File
 # -----------------------------------------------------------
-./build/%.o: ../src/%.cpp
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# -----------------------------------------------------------
-# 2. Generate CPP File (The Fix)
-# -----------------------------------------------------------
-# This rule tells Make: if we need 'build/X.cpp', look for '../individuals/X'
+# This rule tells Make: if we need 'src/X.cpp', look for '../individuals/X'
 # We use $< to represent the dependency (the individual file)
-./build/%.cpp: ../individuals/%
+./src/%.cpp: ../individuals/%
 	@mkdir -p $(@D)
-	$(PYTHON) $(THIS_DIR)/../python/generator.py -i $< -o ./build
+	$(PYTHON) $(THIS_DIR)/../python/generator.py -i $< -o ./src
 
 # -----------------------------------------------------------
-# 3. Main Target (Link Everything)
+# Main Target (Link Everything)
 # -----------------------------------------------------------
 # Usage: make best_0
-# This matches any target name (%), checks if a .cpp exists in build,
+# This matches any target name (%), checks if a .cpp exists in src,
 # and compiles it along with the static OBJS.
-%: ./build/%.cpp $(OBJS)
+%: ./src/%.cpp
 	@mkdir -p lib
-	$(CXX) $(CXXFLAGS) $^ -o ./lib/$@$(TARGET_SUFFIX) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $(OUT_FILE) $(LDFLAGS)
 
 # -----------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------
 clean:
 	rm -f ./build/*
-	rm -f ./lib/*$(TARGET_SUFFIX)
+	rm -f ./lib/*
+	rm -f ./src/*
 
 .PHONY: clean

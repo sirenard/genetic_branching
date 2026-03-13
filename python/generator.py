@@ -96,8 +96,9 @@ class Generator:
 
         return code
 
-    def generate_file(self, name, path, template_path="observer_generation/template.cpp"):
-        with open(template_path, "r") as f:
+    def generate_file(self, name, path, template_src="observer_generation/template.cpp", template_header="observer_generation/template.h"):
+        # Write the src
+        with open(template_src, "r") as f:
             content = f.read()
 
         content = content.replace("template_name", name)
@@ -108,6 +109,16 @@ class Generator:
         content = content.replace("#define FORMULA_STR \"\"", f"#define FORMULA_STR \"{self.formula}\"")
 
         p = os.path.join(path, f"{name}.cpp")
+        with open(p, "w") as f:
+            f.write(content)
+
+        # Write the header
+        with open(template_header, "r") as f:
+            content = f.read()
+
+        content = content.replace("template_name", name)
+
+        p = os.path.join(path, f"{name}.h")
         with open(p, "w") as f:
             f.write(content)
 
@@ -129,9 +140,10 @@ if __name__ == "__main__":
     gen = Generator(str(individial))
 
     current_dir = os.getcwd()
-    template_dir = os.path.join(os.path.abspath(os.path.join(current_dir, os.pardir)), "observer_generation", "template.cpp")
+    template_src = os.path.join(os.path.abspath(os.path.join(current_dir, os.pardir)), "observer_generation", "template.cpp")
+    template_header = os.path.join(os.path.abspath(os.path.join(current_dir, os.pardir)), "observer_generation", "template.h")
 
 
     _, name = os.path.split(args.individual)
 
-    gen.generate_file(name, args.out, template_dir)
+    gen.generate_file(name, args.out, template_src, template_header)

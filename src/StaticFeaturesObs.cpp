@@ -1,7 +1,10 @@
 #include "StaticFeaturesObs.h"
 
+#include "ArrayView.h"
+
 StaticFeaturesObs::StaticFeaturesObs(SCIP *scip): Obs(scip, size) {}
 
+#ifdef USE_PYTHON
 StaticFeaturesObs::StaticFeaturesObs(py::object py_scip) : StaticFeaturesObs(
         static_cast<SCIP *>(PyCapsule_GetPointer(py_scip.ptr(), "scip"))
     ) {
@@ -9,6 +12,7 @@ StaticFeaturesObs::StaticFeaturesObs(py::object py_scip) : StaticFeaturesObs(
         throw py::error_already_set();
     }
 }
+#endif
 
 std::array<double, 1> StaticFeaturesObs::computeObjCoefficient() {
     return {(SCIPvarGetObj(var))};
