@@ -15,7 +15,7 @@ ifeq ($(BUILD_PYTHON), ON)
 	PYTHON_FLAG=-DUSE_PYTHON=ON
     OUT_FILE = ./lib/$@$(TARGET_SUFFIX)
 else
-    OUT_FILE = ./lib/$@.so
+    OUT_FILE = ./lib/lib$@.so
     PYTHON_FLAG =
 endif
 
