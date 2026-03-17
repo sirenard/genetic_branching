@@ -89,10 +89,10 @@ class Generator:
         index -= static_size
 
         if index < tree_size:
-            return f"tree_feature[{index}]"
+            return f"tree_features[{index}]"
         index -= tree_size
 
-        return f"dynamic_features[{index}]"
+        return f"dynamic_feature[{index}]"
 
     def parse(self, expr: str):
 
