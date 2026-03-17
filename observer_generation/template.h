@@ -29,7 +29,7 @@ class template_name : public scip::ObjBranchrule {
   };
 
 public:
-  template_name(SCIP *scip);
+  template_name(SCIP *scip, int priority = 0);
 
   SCIP_DECL_BRANCHINITSOL(scip_initsol) override;
   SCIP_DECL_BRANCHEXECLP(scip_execlp) override;
@@ -37,4 +37,4 @@ public:
   SCIP_DECL_BRANCHEXITSOL(scip_exitsol) override;
 };
 
-void include_template_name(SCIP *scip);
+void include_template_name(SCIP *scip, int priority=0);

@@ -26,7 +26,7 @@ MY_MODULE_PATH=../build
 
 
 # Compiler flags
-CXXFLAGS := $(PYTHON_FLAG) -O3 -Wall -shared -std=c++20 -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/src -I$(FEATURES_INCLUDE)
+CXXFLAGS := $(PYTHON_FLAG) -O3 -march=native -flto -fno-exceptions -fno-rtti -Wall -shared -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/src -I$(FEATURES_INCLUDE)
 LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm -L $(MY_MODULE_PATH) -lgb_features
 
 THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))

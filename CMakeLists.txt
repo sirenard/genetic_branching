@@ -20,13 +20,13 @@ configure_file(
 
 find_package(scip REQUIRED)
 set(SOURCE_FILES
-    src/ArrayView.cpp
-    src/DynamicFeaturesObs.cpp
-    src/Obs.cpp
-    src/StaticFeaturesObs.cpp
-    src/statistics.cpp
-    src/TreeFeaturesObs.cpp
-    src/utils.cpp
+        src/ArrayView.cpp
+        src/DynamicFeaturesObs.cpp
+        src/Obs.cpp
+        src/StaticFeaturesObs.cpp
+        src/statistics.cpp
+        src/TreeFeaturesObs.cpp
+        src/utils.cpp
 )
 
 # 3. Conditional Target Definition
@@ -57,6 +57,23 @@ else()
             LIBRARY DESTINATION lib
             PUBLIC_HEADER DESTINATION include
     )
+
+    target_compile_options(gb_features PRIVATE
+            -march=native
+            -fno-exceptions
+            -fno-rtti
+            # DO NOT add -Ofast or -ffast-math here!
+    )
+
+    # Enable Link-Time Optimization (LTO) the "Modern CMake" way.
+    # This is much safer than passing -flto manually, as CMake checks if the compiler supports it first.
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT error)
+    if(ipo_supported)
+        set_property(TARGET gb_features PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO / LTO is not supported by your compiler: ${error}")
+    endif()
 endif()
 
 # 4. Common Requirements for both Target Types

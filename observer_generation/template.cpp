@@ -12,7 +12,6 @@ namespace py = pybind11;
 #endif
 
 
-
 template_name::FeaturesWrapper::FeaturesWrapper(StaticFeaturesObs &staticFeatures,
                   TreeFeaturesObs &treeFeatures,
                   DynamicFeaturesObs &dynamicFeatures)
@@ -34,13 +33,14 @@ template_name::FeaturesWrapper::FeaturesWrapper(StaticFeaturesObs &staticFeature
     return dynamicFeatures[index];
   }
 
-  throw std::out_of_range("index out of range");
+  //throw std::out_of_range("index out of range");
+  return -1;
 }
 
 
 
-template_name::template_name(SCIP *scip)
-      : ObjBranchrule(scip, "template_name", "Automatically generated", 0, -1,
+template_name::template_name(SCIP *scip, int priority)
+      : ObjBranchrule(scip, "template_name", "Automatically generated", priority, -1,
                       1) {}
 
 SCIP_DECL_BRANCHINITSOL(template_name::scip_initsol){
@@ -123,8 +123,8 @@ SCIP_DECL_BRANCHEXITSOL(template_name::scip_exitsol){
   return SCIP_OKAY;
 }
 
-void include_template_name(SCIP *scip) {
-  SCIPincludeObjBranchrule(scip, new template_name(scip), TRUE);
+void include_template_name(SCIP *scip, int priority) {
+  SCIPincludeObjBranchrule(scip, new template_name(scip, priority), TRUE);
 }
 
 
