@@ -12,7 +12,7 @@
 namespace py = pybind11;
 #endif
 
-class StaticFeaturesObs : public Obs {
+class StaticFeaturesObs : public Obs<StaticFeaturesObs, 14> {
 private:
     std::array<double, 1> computeObjCoefficient();
     std::array<double, 9> computeNonZeroCoefficientsStatistics();
@@ -27,7 +27,7 @@ public:
     #endif
 
     
-    void compute(int index) override;
+    void compute(int index);
 };
 
 #endif // STATICFEATURESOBS_H

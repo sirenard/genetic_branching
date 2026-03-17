@@ -16,7 +16,7 @@ bool DynamicFeaturesObs::isRowActive(SCIP_ROW *row) const {
     return SCIProwIsInLP(row) && (SCIPisEQ(scip, activity, rhs) || SCIPisEQ(scip, activity, lhs));
 }
 
-DynamicFeaturesObs::DynamicFeaturesObs(SCIP* scip): Obs(scip, size) {
+DynamicFeaturesObs::DynamicFeaturesObs(SCIP* scip): Obs(scip) {
 }
 
 #ifdef USE_PYTHON

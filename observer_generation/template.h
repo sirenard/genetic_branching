@@ -15,19 +15,6 @@ class template_name : public scip::ObjBranchrule {
   std::vector<std::unique_ptr<StaticFeaturesObs>> static_features;
   std::unique_ptr<TreeFeaturesObs> tree_features;
 
-  class FeaturesWrapper {
-    StaticFeaturesObs &staticFeatures;
-    TreeFeaturesObs &treeFeatures;
-    DynamicFeaturesObs &dynamicFeatures;
-
-  public:
-    FeaturesWrapper(StaticFeaturesObs &staticFeatures,
-                    TreeFeaturesObs &treeFeatures,
-                    DynamicFeaturesObs &dynamicFeatures);
-
-    double operator[](int index);
-  };
-
 public:
   template_name(SCIP *scip, int priority = 0);
 

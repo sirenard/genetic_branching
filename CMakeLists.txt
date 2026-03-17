@@ -22,7 +22,6 @@ find_package(scip REQUIRED)
 set(SOURCE_FILES
         src/ArrayView.cpp
         src/DynamicFeaturesObs.cpp
-        src/Obs.cpp
         src/StaticFeaturesObs.cpp
         src/statistics.cpp
         src/TreeFeaturesObs.cpp

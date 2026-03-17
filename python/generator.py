@@ -4,6 +4,7 @@ import argparse
 import dill as pickle
 from component import CustomComponent
 from utils import simplify
+import gb_features
 
 def is_float(expr: str):
     try:
@@ -78,13 +79,26 @@ class Generator:
 
         return f"std::{function}({args[0]}, {args[1]})"
 
+    def get_feature(self, index: int):
+        static_size = gb_features.StaticFeaturesObs.size()
+        tree_size = gb_features.TreeFeaturesObs.size()
+        synamic_size = gb_features.DynamicFeaturesObs.size()
 
+        if index < static_size:
+            return f"static_feature[{index}]"
+        index -= static_size
+
+        if index < tree_size:
+            return f"tree_feature[{index}]"
+        index -= tree_size
+
+        return f"dynamic_feature[{index}]"
 
     def parse(self, expr: str):
 
         if expr.startswith("ARG"):
             index = expr[3:]
-            code = f"features[{index}]"
+            code = self.get_feature(int(index))
         elif is_float(expr):
             code = f"static_cast<double>({expr})"
         elif  is_bool(expr):

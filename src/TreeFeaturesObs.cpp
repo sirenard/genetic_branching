@@ -7,7 +7,7 @@
 
 #include "utils.h"
 
-TreeFeaturesObs::TreeFeaturesObs(SCIP* scip): Obs(scip, size){}
+TreeFeaturesObs::TreeFeaturesObs(SCIP* scip): Obs(scip){}
 
 #ifdef USE_PYTHON
 TreeFeaturesObs::TreeFeaturesObs(py::object py_scip) : TreeFeaturesObs(

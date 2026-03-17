@@ -21,7 +21,7 @@ namespace py = pybind11;
 
 #include "Obs.h"
 
-class DynamicFeaturesObs: public Obs{
+class DynamicFeaturesObs: public Obs<DynamicFeaturesObs, 14>{
     bool isRowActive(SCIP_ROW* row) const;
 
     /**
@@ -49,10 +49,11 @@ class DynamicFeaturesObs: public Obs{
      */
     std::array<double, 2> getNSb();
 
-    void compute(int index) override;
 public:
     static const int size = 14;
     explicit DynamicFeaturesObs(SCIP* scip);
+    void compute(int index);
+
     #ifdef USE_PYTHON
     explicit DynamicFeaturesObs(py::object py_scip);
     #endif

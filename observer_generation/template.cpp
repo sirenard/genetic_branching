@@ -12,33 +12,6 @@ namespace py = pybind11;
 #endif
 
 
-template_name::FeaturesWrapper::FeaturesWrapper(StaticFeaturesObs &staticFeatures,
-                  TreeFeaturesObs &treeFeatures,
-                  DynamicFeaturesObs &dynamicFeatures)
-      : staticFeatures(staticFeatures), treeFeatures(treeFeatures),
-        dynamicFeatures(dynamicFeatures) {}
-
-  double template_name::FeaturesWrapper::operator[](int index) {
-  if (index < staticFeatures.size) {
-    return staticFeatures[index];
-  }
-
-  index -= staticFeatures.size;
-  if (index < treeFeatures.size) {
-    return treeFeatures[index];
-  }
-
-  index -= treeFeatures.size;
-  if (index < dynamicFeatures.size) {
-    return dynamicFeatures[index];
-  }
-
-  //throw std::out_of_range("index out of range");
-  return -1;
-}
-
-
-
 template_name::template_name(SCIP *scip, int priority)
       : ObjBranchrule(scip, "template_name", "Automatically generated", priority, -1,
                       1) {}
@@ -79,9 +52,6 @@ SCIP_DECL_BRANCHEXECLP(template_name::scip_execlp) {
         dynamic_feature.reset();
         dynamic_feature.setVar(prob_index);
         static_feature.setVar(prob_index);
-
-        FeaturesWrapper features(static_feature, *tree_features,
-                                 dynamic_feature);
 
         SCIP_Real score = FORMULA;
         // Tie-breaking using SCIP tolerances, fractionality, and objective

@@ -2,7 +2,7 @@
 
 #include "ArrayView.h"
 
-StaticFeaturesObs::StaticFeaturesObs(SCIP *scip): Obs(scip, size) {}
+StaticFeaturesObs::StaticFeaturesObs(SCIP *scip): Obs(scip) {}
 
 #ifdef USE_PYTHON
 StaticFeaturesObs::StaticFeaturesObs(py::object py_scip) : StaticFeaturesObs(
@@ -40,9 +40,9 @@ std::array<double, 9> StaticFeaturesObs::computeNonZeroCoefficientsStatistics() 
 }
 
 std::array<double, 4> StaticFeaturesObs::computeConstraintsDegreeStatistics() {
-    std::vector<double> degrees;
     auto col = SCIPvarGetCol(var);
     auto const n_rows = SCIPcolGetNNonz(col);
+    std::vector<double> degrees(n_rows);
     auto rows = SCIPcolGetRows(col);
 
     for (int i = 0; i < n_rows; i++) {

@@ -15,7 +15,7 @@ namespace py = pybind11;
 
 #include "Obs.h"
 
-class TreeFeaturesObs: public Obs {
+class TreeFeaturesObs: public Obs<TreeFeaturesObs, 5> {
     std::array<double, 1> gap();
     std::array<double, 1> leafFrequency();
     std::array<double, 1> treeWeight();
@@ -30,7 +30,7 @@ public:
     explicit TreeFeaturesObs(py::object pyscip);
     #endif
 
-    void compute(int index) override;
+    void compute(int index);
 };
 
 
