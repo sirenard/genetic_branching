@@ -14,10 +14,9 @@ namespace py = pybind11;
 
 template_name::template_name(SCIP *scip, int priority)
       : ObjBranchrule(scip, "template_name", "Automatically generated", priority, -1,
-                      1) {}
+                      1), tree_features(scip) {}
 
 SCIP_DECL_BRANCHINITSOL(template_name::scip_initsol){
-  tree_features = std::make_unique<TreeFeaturesObs>(scip);
   static_features.resize(SCIPgetNVars(scip));
   return SCIP_OKAY;
 }
@@ -34,7 +33,7 @@ SCIP_DECL_BRANCHEXECLP(template_name::scip_execlp) {
   int bestcand = 0;
   SCIP_Real bestScore = SCIP_REAL_MIN;
 
-  tree_features->reset();
+  tree_features.reset();
 
   if(nlpcands > 1){
       DynamicFeaturesObs dynamic_feature(scip);

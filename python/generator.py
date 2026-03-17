@@ -82,7 +82,7 @@ class Generator:
     def get_feature(self, index: int):
         static_size = gb_features.StaticFeaturesObs.size()
         tree_size = gb_features.TreeFeaturesObs.size()
-        synamic_size = gb_features.DynamicFeaturesObs.size()
+        dynamic_size = gb_features.DynamicFeaturesObs.size()
 
         if index < static_size:
             return f"static_feature[{index}]"

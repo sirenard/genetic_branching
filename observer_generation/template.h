@@ -13,7 +13,7 @@
 
 class template_name : public scip::ObjBranchrule {
   std::vector<std::unique_ptr<StaticFeaturesObs>> static_features;
-  std::unique_ptr<TreeFeaturesObs> tree_features;
+  TreeFeaturesObs tree_features;
 
 public:
   template_name(SCIP *scip, int priority = 0);
