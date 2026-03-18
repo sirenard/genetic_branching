@@ -1,10 +1,18 @@
 # Compiler and flags
 CXX := g++ -std=c++23
+
+
+SCIP_INCLUDE := ${CONDA_PREFIX}/include/
+SCIP_LIB := ${CONDA_PREFIX}/lib
+
+# Compiler flags
+CXXFLAGS := $(PYTHON_FLAG) -O3 -march=native -flto -Wall -shared -fPIC -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/include
+LDFLAGS := -lgb_features -L $(MY_MODULE_PATH) -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm
+
 PYTHON := python3
 
 BUILD_PYTHON=ON
 
-FEATURES_INCLUDE=../src/
 
 
 ifeq ($(BUILD_PYTHON), ON)
@@ -14,20 +22,18 @@ ifeq ($(BUILD_PYTHON), ON)
     TARGET_SUFFIX := $(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 	PYTHON_FLAG=-DUSE_PYTHON=ON
     OUT_FILE = ./lib/$@$(TARGET_SUFFIX)
+    CXXFLAGS := $(CXXFLAGS) $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -DUSE_PYTHON=ON
 else
     OUT_FILE = ./lib/lib$@.so
     PYTHON_FLAG =
+    CXXFLAGS := $(CXXFLAGS) -fno-exceptions -fno-rtti
 endif
 
-SCIP_INCLUDE := ${CONDA_PREFIX}/include/
-SCIP_LIB := ${CONDA_PREFIX}/lib
-MY_MODULE_PATH=../build
 
 
 
-# Compiler flags
-CXXFLAGS := $(PYTHON_FLAG) -O3 -march=native -flto -fno-exceptions -fno-rtti -Wall -shared -fPIC $(PYBIND11_INCLUDE) -I$(PYTHON_INCLUDE) -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/src -I$(FEATURES_INCLUDE)
-LDFLAGS := -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm -L $(MY_MODULE_PATH) -lgb_features
+
+
 
 THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
