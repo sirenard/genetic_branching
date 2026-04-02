@@ -6,7 +6,7 @@ SCIP_INCLUDE := ${CONDA_PREFIX}/include/
 SCIP_LIB := ${CONDA_PREFIX}/lib
 
 # Compiler flags
-CXXFLAGS := $(PYTHON_FLAG) -O3 -march=native -flto -Wall -shared -fPIC -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/include
+CXXFLAGS := $(PYTHON_FLAG) -O3 -DNDEBUG -march=native -flto -Wall -shared -fPIC -I$(SCIP_INCLUDE) -I$(MY_MODULE_PATH)/include
 LDFLAGS := -lgb_features -L $(MY_MODULE_PATH) -L$(SCIP_LIB) -lscip -lreadline -lgmp -lm
 
 PYTHON := python3
