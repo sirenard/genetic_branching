@@ -64,19 +64,19 @@ else()
 endif()
 
 target_compile_options(gb_features PRIVATE
-        -march=native
-        # DO NOT add -Ofast or -ffast-math here!
-)
+            -march=native
+            # DO NOT add -Ofast or -ffast-math here!
+    )
 
-# Enable Link-Time Optimization (LTO) the "Modern CMake" way.
-# This is much safer than passing -flto manually, as CMake checks if the compiler supports it first.
-include(CheckIPOSupported)
-check_ipo_supported(RESULT ipo_supported OUTPUT error)
-if(ipo_supported)
-    set_property(TARGET gb_features PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-    message(WARNING "IPO / LTO is not supported by your compiler: ${error}")
-endif()
+    # Enable Link-Time Optimization (LTO) the "Modern CMake" way.
+    # This is much safer than passing -flto manually, as CMake checks if the compiler supports it first.
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT error)
+    if(ipo_supported)
+        set_property(TARGET gb_features PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO / LTO is not supported by your compiler: ${error}")
+    endif()
 
 # 4. Common Requirements for both Target Types
 target_include_directories(gb_features PUBLIC
