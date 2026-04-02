@@ -28,7 +28,7 @@ def solve(path, individual, feature_observer, scip_params):
     solver = ModularSolver(FunctorComponent(func, feature_observer), scip_params=scip_params,
                                  configure=lambda model: model.setPresolve(pyscipopt.SCIP_PARAMSETTING.OFF))
     solver.solve(path)
-    return solver["estimate_nnodes"], solver["nnodes"], solver["time"]
+    return solver["time"], solver["gap"]
 
 
 def evalSymbReg(individual, pool: MPIExecutor, instances_path, *args):
@@ -36,10 +36,9 @@ def evalSymbReg(individual, pool: MPIExecutor, instances_path, *args):
 
     def get_res():
         estimate_times = []
-        for estimate_nnodes, nnodes, time in [ar.result() for ar in async_results]:
-            estimate_time = estimate_nnodes * (time / nnodes)
-            if estimate_time < time:
-                estimate_time = 10 * time
+        for time, gap in [ar.result() for ar in async_results]:
+            gap = min(gap, 5)
+            estimate_time = time * (1+gap)
             estimate_times.append(estimate_time)
 
         return shifted_geometric_mean(estimate_times, 1),
